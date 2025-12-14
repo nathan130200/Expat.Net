@@ -1,4 +1,5 @@
 using System.Diagnostics;
+
 using static Expat.Native;
 
 namespace Expat.Net.Test;

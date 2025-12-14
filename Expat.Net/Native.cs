@@ -1,7 +1,10 @@
 #pragma warning disable
 
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+[assembly: InternalsVisibleTo("Expat.Net.Test")]
 
 namespace Expat;
 
