@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Expat.Net.Test/Expat.Net.Test.csproj" />
+  <Project Path="Expat.Net/Expat.Net.csproj" />
+</Solution>
