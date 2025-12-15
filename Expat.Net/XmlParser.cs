@@ -15,8 +15,8 @@ public sealed partial class XmlParser : IDisposable
 	volatile bool _isCdataSection;
 	StringBuilder? _cdataSection;
 	readonly GCHandle _userData;
-	readonly Lock _syncRoot = new();
 	XmlParserOptions _options;
+	readonly Lock _syncRoot = new();
 
 	/// <summary>
 	/// Constructor

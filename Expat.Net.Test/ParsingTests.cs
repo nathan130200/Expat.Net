@@ -53,7 +53,7 @@ public class ParsingTests
 
 		var exception = Assert.Throws<ExpatException>(() => parser.Parse(str, str.Length));
 
-		var code = (XmlError)exception.Data["Code"]!;
+		var code = (XmlError)exception!.Data["Code"]!;
 
 		Assert.That(code, Is.EqualTo(XmlError.InvalidToken));
 	}

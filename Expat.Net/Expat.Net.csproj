@@ -9,12 +9,25 @@
 		<Version>2.7.3</Version>
 		<IsTrimmable>false</IsTrimmable>
 		<PublishTrimmed>false</PublishTrimmed>
+		<Authors>nathan130200</Authors>
+		<Description>.NET wrapper for expat library, fast XML parser built in C.</Description>
+		<Copyright>Expat developers, nathan130200</Copyright>
+		<PackageProjectUrl>https://github.com/nathan130200/Expat.Net/</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/nathan130200/Expat.Net/</RepositoryUrl>
+		<PackageTags>xml, xml-parser, expat, xmpp</PackageTags>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Update="PInvoke.Callbacks.cs">
-			<DependentUpon>PInvoke.cs</DependentUpon>
-		</Compile>
+		<None Include="..\LICENSE.txt">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>

@@ -14,12 +14,12 @@ partial class XmlParser
 
 	static XmlParser GetParserState(nint userData)
 	{
-		var result = GCHandle<XmlParser>.FromIntPtr(userData);
+		var result = GCHandle.FromIntPtr(userData);
 
 		if (!result.IsAllocated)
 			throw new InvalidOperationException("Unmanaged callback invoked without managed XML parser state.");
 
-		return result.Target!;
+		return (XmlParser)result.Target!;
 	}
 
 	static readonly XML_StartElementHandler s_OnStartElementCallback = static (userData, name_, attrs_) =>
@@ -29,7 +29,7 @@ partial class XmlParser
 		if (context.OnStartTag == null)
 			return;
 
-		var tagName = Marshal.PtrToStringAnsi(name_)!;
+		var tag = Marshal.PtrToStringAnsi(name_)!;
 
 		var attrs = new Dictionary<string, string>();
 
@@ -49,7 +49,7 @@ partial class XmlParser
 			}
 		}
 
-		context.OnStartTag(tagName, attrs);
+		context.OnStartTag(tag, attrs);
 	};
 
 	static readonly XML_EndElementHandler s_OnEndElementCallback = static (userData, name_) =>

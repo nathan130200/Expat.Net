@@ -11,13 +11,15 @@ public class XmlParserOptions
 		HashSalt = 0
 	};
 
+	Encoding? _encoding;
+
 	/// <summary>
 	/// Specifies a character encoding to use for the document. If this value is <see langword="null" /> it defaults to <see cref="Encoding.UTF8"/>.
 	/// </summary>
 	public Encoding Encoding
 	{
-		get => field ?? Encoding.UTF8;
-		init => field = value;
+		get => _encoding ?? Encoding.UTF8;
+		init => _encoding = value;
 	}
 
 	/// <summary>

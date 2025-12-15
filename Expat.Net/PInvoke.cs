@@ -26,9 +26,7 @@ public static partial class PInvoke
 	}
 
 	const string s_LibName = "expat";
-
 	static nint s_LibraryInstance;
-
 	static readonly Lock s_Lock = new();
 
 	static readonly Lazy<IEnumerable<string>> s_LibraryFileNames = new(() =>
@@ -40,7 +38,7 @@ public static partial class PInvoke
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			extensions = [".dll"];
 		else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-			extensions = [".dylib", ".so"];
+			extensions = [".dylib", ".so", ".so.1"];
 		else
 			extensions = [".so", ".so.1"];
 
@@ -84,7 +82,7 @@ public static partial class PInvoke
 			}
 
 			// fallback default library loader
-			return 0;
+			return (nint)0;
 		});
 	}
 
