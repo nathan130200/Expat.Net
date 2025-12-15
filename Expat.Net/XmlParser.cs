@@ -5,7 +5,10 @@ using static Expat.PInvoke;
 
 namespace Expat;
 
-public sealed class XmlParser : IDisposable
+/// <summary>
+/// Represents the expat xml parser wrapper class.
+/// </summary>
+public sealed partial class XmlParser : IDisposable
 {
 	nint _parser;
 	volatile bool _disposed;
@@ -13,8 +16,12 @@ public sealed class XmlParser : IDisposable
 	StringBuilder? _cdataSection;
 	readonly GCHandle _userData;
 	readonly Lock _syncRoot = new();
-	XmlParserOptions? _options;
+	XmlParserOptions _options;
 
+	/// <summary>
+	/// Constructor
+	/// </summary>
+	/// <param name="options">Parser configuration options.</param>
 	public XmlParser(XmlParserOptions? options = default)
 	{
 		_options = options ?? XmlParserOptions.Default;
@@ -25,27 +32,33 @@ public sealed class XmlParser : IDisposable
 
 		_userData = GCHandle.Alloc(this, GCHandleType.Normal);
 
-		if (_options!.HashSalt is ulong value)
-		{
-			if (value == 0)
-			{
-				Span<byte> buf = stackalloc byte[8];
-				Random.Shared.NextBytes(buf);
-				value = BitConverter.ToUInt64(buf);
-			}
-
-			XML_SetHashSalt(_parser, value);
-		}
-
-		Init();
+		Reset(false);
 	}
 
-	void Init(bool reset = false)
+	void Reset(bool invokeNative)
 	{
-		if (reset)
+		if (invokeNative)
 			XML_ParserReset(_parser, _options!.Encoding!.WebName);
 
 		XML_SetUserData(_parser, (nint)_userData);
+		XML_SetElementHandler(_parser, s_OnStartElementCallback, s_OnEndElementCallback);
+		XML_SetCdataSectionHandler(_parser, s_OnCdataStartCallback, s_OnCdataEndCallback);
+		XML_SetCharacterDataHandler(_parser, s_OnCharacterDataCallback);
+		XML_SetCommentHandler(_parser, s_OnCommentCallback);
+		XML_SetProcessingInstructionHandler(_parser, s_OnProcessingInstructionCallback);
+
+		if (_options!.HashSalt > 0)
+			XML_SetHashSalt(_parser, _options.HashSalt);
+
+		{
+			if (_options.BillionLaughsAttackProtectionActivationThreshold is ulong value)
+				XML_SetBillionLaughsAttackProtectionActivationThreshold(_parser, value);
+		}
+
+		{
+			if (_options.BillionLaughsAttackProtectionMaximumAmplification is float value)
+				XML_SetBillionLaughsAttackProtectionMaximumAmplification(_parser, value);
+		}
 	}
 
 	void ThrowIfDisposed()
@@ -56,7 +69,7 @@ public sealed class XmlParser : IDisposable
 		lock (_syncRoot)
 		{
 			ThrowIfDisposed();
-			Init(true);
+			Reset(true);
 		}
 	}
 
@@ -102,27 +115,54 @@ public sealed class XmlParser : IDisposable
 		}
 	}
 
+	public void Parse(byte[] buf, int len)
+	{
+		ThrowIfDisposed();
+
+		lock (_syncRoot)
+		{
+			ThrowIfFailed(XML_Parse(_parser, buf, len, len <= 0));
+		}
+	}
+
+	public bool TryParse(byte[] buf, int len)
+	{
+		ThrowIfDisposed();
+
+		lock (_syncRoot)
+		{
+			return XML_Parse(_parser, buf, len, len <= 0) == XmlStatus.Success;
+		}
+	}
+
 	public void Dispose()
 	{
-		if (_disposed)
-			return;
+		// better synchronize here. will prevent early
+		// deletion of userData and invalidating unmanaged
+		// parser too early.
 
-		_disposed = true;
-
-		_options = null;
-
-		_isCdataSection = false;
-
-		_cdataSection?.Clear();
-		_cdataSection = null;
-
-		if (_userData.IsAllocated)
-			_userData.Free();
-
-		if (_parser != 0)
+		lock (_syncRoot)
 		{
-			XML_ParserFree(_parser);
-			_parser = 0;
+			if (_disposed)
+				return;
+
+			_disposed = true;
+
+			_options = null!;
+
+			_isCdataSection = false;
+
+			_cdataSection?.Clear();
+			_cdataSection = null;
+
+			if (_userData.IsAllocated)
+				_userData.Free();
+
+			if (_parser != 0)
+			{
+				XML_ParserFree(_parser);
+				_parser = 0;
+			}
 		}
 	}
 }
