@@ -1,31 +1,55 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using static Expat.Native;
+using static Expat.PInvoke;
 
 namespace Expat;
 
 public sealed class XmlParser : IDisposable
 {
 	nint _parser;
-	Encoding? _encoding;
 	volatile bool _disposed;
 	volatile bool _isCdataSection;
 	StringBuilder? _cdataSection;
-	readonly GCHandle _userData;
+	readonly GCHandle<XmlParser> _userData;
 	readonly Lock _syncRoot = new();
+	XmlParserOptions? _options;
 
-	public XmlParser(Encoding? encoding = default)
+	public XmlParser(XmlParserOptions? options = default)
 	{
-		_encoding = encoding ?? Encoding.UTF8;
-		_parser = XML_ParserCreate(_encoding.WebName);
-		_userData = GCHandle.Alloc(this);
+		_options = options ?? XmlParserOptions.Default;
 
-		Setup(false);
+		if (_options.MemoryHandlingSuite == null)
+			_parser = XML_ParserCreate(_options.Encoding!.WebName);
+		else
+			_parser = XML_ParserCreate_MM(_options.Encoding!.WebName,
+				ref _options.MemoryHandlingSuite.__native, null);
+
+		Debug.Assert(_parser != 0, "out of memory");
+
+		_userData = new(this);
+
+		if (_options!.HashSalt is ulong value)
+		{
+			if (value == 0)
+			{
+				Span<byte> buf = stackalloc byte[8];
+				Random.Shared.NextBytes(buf);
+				value = BitConverter.ToUInt64(buf);
+			}
+
+			XML_SetHashSalt(_parser, value);
+		}
+
+		Init();
 	}
 
-	void Setup(bool reset)
+	void Init(bool reset = false)
 	{
+		if (reset)
+			XML_ParserReset(_parser, _options!.Encoding!.WebName);
 
+		XML_SetUserData(_parser, GCHandle<XmlParser>.ToIntPtr(_userData));
 	}
 
 	void ThrowIfDisposed()
@@ -36,7 +60,7 @@ public sealed class XmlParser : IDisposable
 		lock (_syncRoot)
 		{
 			ThrowIfDisposed();
-			Setup(true);
+			Init(true);
 		}
 	}
 
@@ -58,11 +82,11 @@ public sealed class XmlParser : IDisposable
 		}
 	}
 
-	void ThrowIfFailed(XML_Status status)
+	void ThrowIfFailed(XmlStatus status)
 	{
-		if (status != XML_Status.XML_STATUS_OK)
+		if (status != XmlStatus.Success)
 		{
-			var code = _disposed ? XML_Error.XML_ERROR_UNEXPECTED_STATE
+			var code = _disposed ? XmlError.UnexpectedState
 				: XML_GetErrorCode(_parser);
 
 			var exception = new ExpatException(XML_ErrorString(code))
@@ -88,7 +112,7 @@ public sealed class XmlParser : IDisposable
 
 		_disposed = true;
 
-		_encoding = null;
+		_options = null;
 
 		_isCdataSection = false;
 
@@ -96,7 +120,7 @@ public sealed class XmlParser : IDisposable
 		_cdataSection = null;
 
 		if (_userData.IsAllocated)
-			_userData.Free();
+			_userData.Dispose();
 
 		if (_parser != 0)
 		{

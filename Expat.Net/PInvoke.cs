@@ -1,6 +1,9 @@
 #pragma warning disable
 
+#nullable enable
+
 using System.ComponentModel;
+using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -9,7 +12,7 @@ using System.Runtime.InteropServices;
 namespace Expat;
 
 [EditorBrowsable(EditorBrowsableState.Never)]
-internal static partial class Native
+public static partial class PInvoke
 {
 	const string s_LibName = "expat";
 
@@ -26,7 +29,7 @@ internal static partial class Native
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 			extensions = [".dll"];
 		else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-			extensions = [".dylib"];
+			extensions = [".dylib", ".so"];
 		else
 			extensions = [".so", ".so.1"];
 
@@ -45,9 +48,9 @@ internal static partial class Native
 
 	}, true);
 
-	static Native()
+	static PInvoke()
 	{
-		NativeLibrary.SetDllImportResolver(typeof(Native).Assembly, static (libraryName, assembly, searchPaths) =>
+		NativeLibrary.SetDllImportResolver(typeof(PInvoke).Assembly, static (libraryName, assembly, searchPaths) =>
 		{
 			if (libraryName == s_LibName)
 			{
@@ -69,42 +72,55 @@ internal static partial class Native
 				}
 			}
 
+			// fallback default library loader
 			return 0;
 		});
 	}
 
 	// ----------------------------------------------------------------------- //
 
-	public static nint XML_ParserCreate(string? encoding = null)
-	{
-		var ptr = Marshal.StringToHGlobalAnsi(encoding);
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern nint XML_ParserCreate(string? encoding);
 
-		try
-		{
-			return __PInvoke(ptr);
-		}
-		finally
-		{
-			if (ptr != 0)
-				Marshal.FreeHGlobal(ptr);
-		}
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern nint XML_ParserCreate_MM(string? encoding, ref MemoryHandlingSuite.Struct memsuite, string? namespaceSeparator);
 
-		[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = nameof(XML_ParserCreate))]
-		static extern nint __PInvoke(nint encoding = 0);
-	}
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern void XML_ParserReset(nint parser, string? encoding = null);
 
-	[DllImport(s_LibName)]
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern void XML_SetUserData(nint parser, nint userData);
+
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void XML_ParserFree(nint parser);
 
 	// ----------------------------------------------------------------------- //
 
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern int XML_SetParamEntityParsing(nint parser, XmlEntityParsing parsing);
+
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
+	[return: MarshalAs(UnmanagedType.Bool)]
+	public static extern bool XML_SetHashSalt(nint parser, ulong salt);
+
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern bool XML_SetBillionLaughsAttackProtectionActivationThreshold(nint parser, ulong activationThresholdBytes);
+
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern bool XML_SetBillionLaughsAttackProtectionMaximumAmplification(nint parser, float maximumAmplificationFactor);
+
+	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
+	public static extern XmlError XML_UseForeignDTD(nint parser, [MarshalAs(UnmanagedType.I1)] bool useDTD);
+
+	// ----------------------------------------------------------------------- //
+
 	[DllImport(s_LibName)]
-	public static extern XML_Status XML_StopParser(nint parser,
+	public static extern XmlStatus XML_StopParser(nint parser,
 		[MarshalAs(UnmanagedType.I1)]
 		bool resumable);
 
 	[DllImport(s_LibName)]
-	public static extern XML_Status XML_ResumeParser(nint parser);
+	public static extern XmlStatus XML_ResumeParser(nint parser);
 
 	// ----------------------------------------------------------------------- //
 
@@ -122,36 +138,36 @@ internal static partial class Native
 
 	// ----------------------------------------------------------------------- //
 
-	static readonly Lazy<Dictionary<XML_Error, string>> s_ErrorToStringLazy = new(() =>
+	static readonly Lazy<Dictionary<XmlError, string>> s_ErrorToStringLazy = new(() =>
 	{
-		var dict = new Dictionary<XML_Error, string>
+		var dict = new Dictionary<XmlError, string>
 		{
 			[0] = "none"
 		};
 
 		for (int i = 1; i <= 64; i++)
 		{
-			var code = (XML_Error)i;
+			var code = (XmlError)i;
 			var msg = Marshal.PtrToStringAnsi(__PInvoke(code));
 
 			if (msg == null)
 				break;
 
-			dict[(XML_Error)i] = msg;
+			dict[(XmlError)i] = msg;
 		}
 
 		return dict;
 
 		[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = nameof(XML_ErrorString))]
-		static extern nint __PInvoke(XML_Error code);
+		static extern nint __PInvoke(XmlError code);
 
 	}, true);
 
-	public static string XML_ErrorString(XML_Error error)
+	public static string XML_ErrorString(XmlError error)
 		=> s_ErrorToStringLazy.Value.GetValueOrDefault(error) ?? error.ToString();
 
 	[DllImport(s_LibName)]
-	public static extern XML_Error XML_GetErrorCode(nint parser);
+	public static extern XmlError XML_GetErrorCode(nint parser);
 
 	public static string XML_ExpatVersion()
 	{
@@ -164,7 +180,7 @@ internal static partial class Native
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern int XML_GetSpecifiedAttributeCount(nint parser);
 
-	public static XML_Status XML_Parse(nint parser, byte[] buf, int len, bool isFinal)
+	public static XmlStatus XML_Parse(nint parser, byte[] buf, int len, bool isFinal)
 	{
 		var handle = GCHandle.Alloc(buf, GCHandleType.Pinned);
 
@@ -178,8 +194,6 @@ internal static partial class Native
 		}
 
 		[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl, EntryPoint = nameof(XML_Parse))]
-		static extern XML_Status __PInvoke(nint parser, nint buf, int len, int final);
+		static extern XmlStatus __PInvoke(nint parser, nint buf, int len, int final);
 	}
 }
-
-#pragma warning restore

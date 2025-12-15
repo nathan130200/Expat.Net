@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-using static Expat.Native;
+using static Expat.PInvoke;
 
 namespace Expat.Net.Test;
 
@@ -21,7 +21,7 @@ public class LibraryTests
 		var watch = Stopwatch.StartNew();
 
 		for (int i = 0; i <= 64; i++)
-			_ = XML_ErrorString((XML_Error)i);
+			_ = XML_ErrorString((XmlError)i);
 
 		Console.WriteLine($"[PrintErrors] Run test! [Iteration {(TestContext.CurrentContext.CurrentRepeatCount + 1),2}] " +
 			$"Elapsed time: {watch.Elapsed.TotalMilliseconds:F2} ms");
@@ -56,13 +56,13 @@ public class LibraryTests
 	{
 		var parser = CreateParser("BOOH!");
 
-		Assert.That(XML_Parse(parser, SampleXml, SampleXml.Length, false), Is.EqualTo(XML_Status.XML_STATUS_ERROR));
+		Assert.That(XML_Parse(parser, SampleXml, SampleXml.Length, false), Is.EqualTo(XmlStatus.Error));
 
 		var code = XML_GetErrorCode(parser);
 
 		Assert.That(code,
-			Is.EqualTo(XML_Error.XML_ERROR_UNKNOWN_ENCODING) |
-			Is.EqualTo(XML_Error.XML_ERROR_INCORRECT_ENCODING));
+			Is.EqualTo(XmlError.UnknownEncoding) |
+			Is.EqualTo(XmlError.IncorrectEncoding));
 
 		Console.WriteLine("ERROR: " + code);
 
@@ -77,11 +77,11 @@ public class LibraryTests
 		var result = XML_Parse(parser, SampleXml, SampleXml.Length, true);
 		var error = XML_GetErrorCode(parser);
 
-		Assert.That(result, Is.EqualTo(XML_Status.XML_STATUS_OK));
+		Assert.That(result, Is.EqualTo(XmlStatus.Success));
 
 		Console.WriteLine("result: " + result);
 
-		Assert.That(error, Is.EqualTo(XML_Error.XML_ERROR_NONE));
+		Assert.That(error, Is.EqualTo(XmlError.None));
 
 		Console.WriteLine("error: " + error);
 
@@ -90,5 +90,55 @@ public class LibraryTests
 		Assert.That(attr / 2, Is.EqualTo(2));
 
 		XML_ParserFree(parser);
+	}
+
+	[Test]
+	public void TestParsingStatus()
+	{
+		var parser = CreateParser("UTF-8");
+
+		try
+		{
+			Report(out var result, "Before parse");
+
+			Assert.Multiple(() =>
+			{
+				Assert.That(result.status, Is.EqualTo(ParsingState.Type.Initialized));
+				Assert.That(result.finalBuffer, Is.True);
+			});
+
+			XML_Parse(parser, SampleXml, SampleXml.Length, false);
+
+			Report(out result, "After Parse Sample");
+
+			Assert.Multiple(() =>
+			{
+				Assert.That(result.status, Is.EqualTo(ParsingState.Type.Parsing));
+				Assert.That(result.finalBuffer, Is.False);
+			});
+
+			XML_Parse(parser, [], 0, true);
+
+			Report(out result, "End Parsing");
+
+			Assert.Multiple(() =>
+			{
+				Assert.That(result.status, Is.EqualTo(ParsingState.Type.Finished));
+				Assert.That(result.finalBuffer, Is.True);
+			});
+		}
+		finally
+		{
+			XML_ParserFree(parser);
+		}
+
+		void Report(out ParsingState result, string? prefix = "Start")
+		{
+			XML_GetParsingStatus(parser, out result);
+
+			Console.WriteLine(prefix + " | status: " + result.status);
+			Console.WriteLine(prefix + " | is final buffer: " + result.finalBuffer);
+			Console.WriteLine(prefix + " | -----------\n");
+		}
 	}
 }

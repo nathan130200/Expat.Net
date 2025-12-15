@@ -7,6 +7,14 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<RootNamespace>Expat</RootNamespace>
 		<Version>2.7.3</Version>
+		<IsTrimmable>false</IsTrimmable>
+		<PublishTrimmed>false</PublishTrimmed>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Update="PInvoke.Callbacks.cs">
+			<DependentUpon>PInvoke.cs</DependentUpon>
+		</Compile>
+	</ItemGroup>
 
 </Project>
