@@ -13,7 +13,12 @@ public class LibraryTests
 		readonly int _counter;
 		readonly nint _value;
 
-		public NativeXmlParser(string? encoding = null)
+		public NativeXmlParser() : this("UTF-8")
+		{
+
+		}
+
+		public NativeXmlParser(string? encoding)
 		{
 			_value = XML_ParserCreate(encoding);
 			Assert.That(_value, Is.Not.EqualTo(0));
@@ -104,5 +109,45 @@ public class LibraryTests
 		var attr = XML_GetSpecifiedAttributeCount(parser);
 
 		Assert.That(attr / 2, Is.EqualTo(2));
+	}
+
+	[Test]
+	[TestCase(true)]
+	[TestCase(false)]
+	public void CantParseWhileSuspended(bool resumable)
+	{
+		using var parser = new NativeXmlParser("UTF-8");
+
+		var sample = "<foo>"u8.ToArray();
+
+		var status = XML_Parse(parser, sample, sample.Length, false);
+
+		if (status == XmlStatus.Error)
+			Assert.Fail(XML_GetErrorCode(parser).Message);
+
+		Assert.That(status, Is.EqualTo(XmlStatus.Success));
+
+		if (XML_StopParser(parser, resumable) == XmlStatus.Error)
+			Assert.Fail("Cannot stop parser");
+
+		Console.WriteLine("Stopped parser.");
+
+		sample = "<bar/>"u8.ToArray();
+
+		status = XML_Parse(parser, sample, sample.Length, false);
+		Assert.That(status, Is.EqualTo(XmlStatus.Error));
+
+		if (!resumable)
+		{
+			var code = XML_GetErrorCode(parser);
+			Assert.That(code, Is.EqualTo(XmlError.Finished));
+			Console.WriteLine("Cant resume parser (resumable = false)");
+		}
+		else
+		{
+			status = XML_ResumeParser(parser);
+			Assert.That(status, Is.EqualTo(XmlStatus.Success));
+			Console.WriteLine("Can resume parser (resumable = true)");
+		}
 	}
 }
