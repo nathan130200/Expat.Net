@@ -18,7 +18,4 @@ partial class PInvoke
 
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void XML_SetCdataSectionHandler(nint parser, XML_CdataSectionHandler start, XML_CdataSectionHandler end);
-
-	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void XML_SetNamespaceDeclHandler(nint parser, XML_StartNamespaceDeclHandler start, XML_EndElementHandler end);
 }
