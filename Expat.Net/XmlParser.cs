@@ -11,7 +11,7 @@ public sealed class XmlParser : IDisposable
 	volatile bool _disposed;
 	volatile bool _isCdataSection;
 	StringBuilder? _cdataSection;
-	readonly GCHandle<XmlParser> _userData;
+	readonly GCHandle _userData;
 	readonly Lock _syncRoot = new();
 	XmlParserOptions? _options;
 
@@ -19,15 +19,11 @@ public sealed class XmlParser : IDisposable
 	{
 		_options = options ?? XmlParserOptions.Default;
 
-		if (_options.MemoryHandlingSuite == null)
-			_parser = XML_ParserCreate(_options.Encoding!.WebName);
-		else
-			_parser = XML_ParserCreate_MM(_options.Encoding!.WebName,
-				ref _options.MemoryHandlingSuite.__native, null);
+		_parser = XML_ParserCreate(_options.Encoding!.WebName);
 
 		Debug.Assert(_parser != 0, "out of memory");
 
-		_userData = new(this);
+		_userData = GCHandle.Alloc(this, GCHandleType.Normal);
 
 		if (_options!.HashSalt is ulong value)
 		{
@@ -49,7 +45,7 @@ public sealed class XmlParser : IDisposable
 		if (reset)
 			XML_ParserReset(_parser, _options!.Encoding!.WebName);
 
-		XML_SetUserData(_parser, GCHandle<XmlParser>.ToIntPtr(_userData));
+		XML_SetUserData(_parser, (nint)_userData);
 	}
 
 	void ThrowIfDisposed()
@@ -86,7 +82,8 @@ public sealed class XmlParser : IDisposable
 	{
 		if (status != XmlStatus.Success)
 		{
-			var code = _disposed ? XmlError.UnexpectedState
+			var code = _disposed
+				? XmlError.UnexpectedState
 				: XML_GetErrorCode(_parser);
 
 			var exception = new ExpatException(XML_ErrorString(code))
@@ -120,7 +117,7 @@ public sealed class XmlParser : IDisposable
 		_cdataSection = null;
 
 		if (_userData.IsAllocated)
-			_userData.Dispose();
+			_userData.Free();
 
 		if (_parser != 0)
 		{

@@ -83,9 +83,6 @@ public static partial class PInvoke
 	public static extern nint XML_ParserCreate(string? encoding);
 
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern nint XML_ParserCreate_MM(string? encoding, ref MemoryHandlingSuite.Struct memsuite, string? namespaceSeparator);
-
-	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void XML_ParserReset(nint parser, string? encoding = null);
 
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]

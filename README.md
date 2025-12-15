@@ -23,12 +23,6 @@ The goal is to combine Expat’s performance and streaming model with a controll
 * `OnCdata`
 * `OnComment`
 
-## Memory Management
-
-By default expat uses system memory management functions (malloc, realloc and free), but you can override these functions implementing custom classe from base class of `MemoryHandlingSuite` class and re-implement your own memory handling 
-
-The library has a default implementation `MemoryHandlingSuite.Default` (its just wrapper to `System.Runtime.InteropServices.Marshal` functions: `AllocHGlobal`, `ReallocHGlobal`, `FreeHGlobal`).
-
 ## Dependencies
 
 * Native libexpat (build with vcpkg or grab in [libexpat github releases page](https://github.com/libexpat/libexpat/releases))

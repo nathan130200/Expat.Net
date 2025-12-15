@@ -11,7 +11,6 @@ public class XmlParserOptions
 		HashSalt = 0
 	};
 
-	public MemoryHandlingSuite? MemoryHandlingSuite { get; init; }
 	public Encoding? Encoding { get; init; }
 	public long? BillionLaughsAttackProtectionActivationThreshold { get; init; }
 	public float? BillionLaughsAttackProtectionMaximumAmplification { get; init; }
