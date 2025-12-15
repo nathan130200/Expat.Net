@@ -121,10 +121,6 @@ public class LibraryTests
 		var sample = "<foo>"u8.ToArray();
 
 		var status = XML_Parse(parser, sample, sample.Length, false);
-
-		if (status == XmlStatus.Error)
-			Assert.Fail(XML_GetErrorCode(parser).Message);
-
 		Assert.That(status, Is.EqualTo(XmlStatus.Success));
 
 		if (XML_StopParser(parser, resumable) == XmlStatus.Error)
