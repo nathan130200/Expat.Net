@@ -14,6 +14,17 @@ namespace Expat;
 [EditorBrowsable(EditorBrowsableState.Never)]
 public static partial class PInvoke
 {
+	extension(XmlError error)
+	{
+		public string Message
+		{
+			get
+			{
+				return XML_ErrorString(error);
+			}
+		}
+	}
+
 	const string s_LibName = "expat";
 
 	static nint s_LibraryInstance;

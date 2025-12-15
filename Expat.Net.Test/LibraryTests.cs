@@ -2,10 +2,36 @@ using System.Diagnostics;
 
 using static Expat.PInvoke;
 
-namespace Expat.Net.Test;
+namespace Expat.Test;
 
 public class LibraryTests
 {
+	readonly struct NativeXmlParser : IDisposable
+	{
+		static volatile int g_Counter = 1;
+
+		readonly int _counter;
+		readonly nint _value;
+
+		public NativeXmlParser(string? encoding = null)
+		{
+			_value = XML_ParserCreate(encoding);
+			Assert.That(_value, Is.Not.EqualTo(0));
+			_counter = g_Counter++;
+
+			Console.WriteLine("NativeXmlParser::NativeXmlParser(): Create #" + _counter + " parser");
+		}
+
+		public nint Handle => _value;
+
+		public void Dispose()
+		{
+			XML_ParserFree(_value);
+			Console.WriteLine("NativeXmlParser::~NativeXmlParser(): Dispose #" + _counter + " parser");
+		}
+
+		public static implicit operator nint(NativeXmlParser self) => self._value;
+	}
 
 	[Test]
 	public void PrintExpatVersion()
@@ -36,17 +62,9 @@ public class LibraryTests
 	[TestCase("UTF-16LE")]
 	public void CreateParserWithKnownEncoding(string encodingName)
 	{
-		var parser = XML_ParserCreate(encodingName);
-		Assert.That(parser, Is.Not.EqualTo(0));
-		Console.WriteLine($"Parser instance: 0x{parser:x8}");
-		XML_ParserFree(parser);
-	}
-
-	static nint CreateParser(string enc)
-	{
-		var parser = XML_ParserCreate(enc);
-		Assert.That(parser, Is.Not.EqualTo(0));
-		return parser;
+		using var parser = new NativeXmlParser(encodingName);
+		Assert.That(parser.Handle, Is.Not.EqualTo(0));
+		Console.WriteLine($"Parser instance: 0x{parser.Handle:x8}");
 	}
 
 	static readonly byte[] SampleXml = "<foo bar='baz' xmlns='urn:xml:test' />"u8.ToArray();
@@ -54,7 +72,7 @@ public class LibraryTests
 	[Test]
 	public void TryParseWithInvalidEncoding()
 	{
-		var parser = CreateParser("BOOH!");
+		using var parser = new NativeXmlParser("BOOH!");
 
 		Assert.That(XML_Parse(parser, SampleXml, SampleXml.Length, false), Is.EqualTo(XmlStatus.Error));
 
@@ -65,14 +83,12 @@ public class LibraryTests
 			Is.EqualTo(XmlError.IncorrectEncoding));
 
 		Console.WriteLine("ERROR: " + code);
-
-		XML_ParserFree(parser);
 	}
 
 	[Test]
 	public void BasicXmlParsing()
 	{
-		var parser = CreateParser("UTF-8");
+		using var parser = new NativeXmlParser("UTF-8");
 
 		var result = XML_Parse(parser, SampleXml, SampleXml.Length, true);
 		var error = XML_GetErrorCode(parser);
@@ -88,7 +104,5 @@ public class LibraryTests
 		var attr = XML_GetSpecifiedAttributeCount(parser);
 
 		Assert.That(attr / 2, Is.EqualTo(2));
-
-		XML_ParserFree(parser);
 	}
 }

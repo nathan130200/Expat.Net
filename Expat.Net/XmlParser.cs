@@ -125,13 +125,20 @@ public sealed partial class XmlParser : IDisposable
 		}
 	}
 
-	public bool TryParse(byte[] buf, int len)
+	public bool TryParse(byte[] buf, int len, out XmlError error)
 	{
 		ThrowIfDisposed();
 
 		lock (_syncRoot)
 		{
-			return XML_Parse(_parser, buf, len, len <= 0) == XmlStatus.Success;
+			error = 0;
+
+			var status = XML_Parse(_parser, buf, len, len <= 0);
+
+			if (status != XmlStatus.Success)
+				error = XML_GetErrorCode(_parser);
+
+			return status == XmlStatus.Success;
 		}
 	}
 

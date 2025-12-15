@@ -4,7 +4,7 @@ namespace Expat;
 
 public class XmlParserOptions
 {
-	public static readonly XmlParserOptions Default = new()
+	public static XmlParserOptions Default { get; } = new()
 	{
 		Encoding = Encoding.UTF8,
 		EntityParsing = XmlEntityParsing.Never,
