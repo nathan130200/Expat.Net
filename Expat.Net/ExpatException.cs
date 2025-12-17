@@ -16,4 +16,10 @@ public sealed class ExpatException : Exception
 	{
 
 	}
+
+	public XmlError Code { get; init; }
+	public int ByteIndex { get; init; }
+	public int ByteCount { get; init; }
+	public long LineNumber { get; init; }
+	public long LinePosition { get; init; }
 }

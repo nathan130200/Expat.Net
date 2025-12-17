@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using static Expat.PInvoke;
@@ -19,6 +18,9 @@ public sealed partial class XmlParser : IDisposable
 	XmlParserOptions _options;
 	readonly Lock _syncRoot = new();
 
+	/// <summary>
+	/// Unmanaged parser handle.
+	/// </summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	public nint Handle => _parser;
 
@@ -32,7 +34,13 @@ public sealed partial class XmlParser : IDisposable
 
 		_parser = XML_ParserCreate(_options.Encoding!.WebName);
 
-		Debug.Assert(_parser != 0, "out of memory");
+		if (_parser == 0)
+		{
+			throw new ExpatException("Failed to create expat parser interface!")
+			{
+				Code = XmlError.NoMemory
+			};
+		}
 
 		_userData = GCHandle.Alloc(this, GCHandleType.Normal);
 
@@ -105,14 +113,11 @@ public sealed partial class XmlParser : IDisposable
 
 			var exception = new ExpatException(XML_ErrorString(code))
 			{
-				Data =
-				{
-					["Code"] = code,
-					["LineNumber"] = _disposed ? 0 : XML_GetCurrentLineNumber(_parser),
-					["ColumnNumber"] = _disposed ? 0 : XML_GetCurrentColumnNumber(_parser),
-					["ByteIndex"] = _disposed ? 0 : XML_GetCurrentByteIndex(_parser),
-					["ByteCount"] = _disposed ? 0 : XML_GetCurrentByteCount(_parser),
-				}
+				Code = code,
+				LineNumber = _disposed ? 0 : XML_GetCurrentLineNumber(_parser),
+				ColumnNumber = _disposed ? 0 : XML_GetCurrentColumnNumber(_parser),
+				ByteIndex = _disposed ? 0 : XML_GetCurrentByteIndex(_parser),
+				ByteCount = _disposed ? 0 : XML_GetCurrentByteCount(_parser),
 			};
 
 			throw exception;

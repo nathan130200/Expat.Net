@@ -5,14 +5,43 @@ namespace Expat;
 
 partial class XmlParser
 {
+	/// <summary>
+	/// Event invoked when start tag is parsed.
+	/// </summary>
 	public event Action<string, IReadOnlyDictionary<string, string>>? OnStartTag;
+
+	/// <summary>
+	/// Event invoked when end tag is parsed.
+	/// </summary>
 	public event Action<string>? OnEndTag;
+
+	/// <summary>
+	/// Event invoked when text node is parsed.
+	/// </summary>
 	public event Action<string>? OnText;
+
+	/// <summary>
+	/// Event invoked when cdata node is parsed.
+	/// </summary>
 	public event Action<string>? OnCdata;
+
+	/// <summary>
+	/// Event invoked when comment node is parsed.
+	/// </summary>
 	public event Action<string>? OnComment;
+
+	/// <summary>
+	/// Event invoked when processing instruction is parsed.
+	/// </summary>
 	public event Action<string, string>? OnProcessingInstruction;
 
-	static XmlParser GetParserState(nint userData)
+	/// <summary>
+	/// Gets the managed parser state from callback.
+	/// </summary>
+	/// <param name="userData">Pointer to an <see cref="GCHandle"/> wrapping our managed <see cref="XmlParser"/> instance</param>
+	/// <returns></returns>
+	/// <exception cref="InvalidOperationException">Callback was invoked but managed parser state is invalid.</exception>
+	protected static XmlParser GetParserState(nint userData)
 	{
 		var result = GCHandle.FromIntPtr(userData);
 
@@ -29,9 +58,9 @@ partial class XmlParser
 		if (context.OnStartTag == null)
 			return;
 
-		var tag = Marshal.PtrToStringAnsi(name_)!;
+		var tagName = Marshal.PtrToStringAnsi(name_)!;
 
-		var attrs = new Dictionary<string, string>();
+		var attributes = new Dictionary<string, string>();
 
 		{
 			var count = PInvoke.XML_GetSpecifiedAttributeCount(context._parser);
@@ -44,22 +73,31 @@ partial class XmlParser
 				{
 					var attName = Marshal.ReadIntPtr(attrs_, i * nint.Size);
 					var attVal = Marshal.ReadIntPtr(attrs_, (i + 1) * nint.Size);
-					attrs[Marshal.PtrToStringAnsi(attName)!] = Marshal.PtrToStringAnsi(attVal)!;
+					attributes[Marshal.PtrToStringAnsi(attName)!] = Marshal.PtrToStringAnsi(attVal)!;
 				}
 			}
 		}
 
-		context.OnStartTag(tag, attrs);
+		context.OnStartTag(tagName, attributes);
 	};
 
-	static readonly XML_EndElementHandler s_OnEndElementCallback = static (userData, name_) =>
+	static readonly XML_EndElementHandler s_OnEndElementCallback = static (userData, name) =>
 	{
 		var context = GetParserState(userData);
-		context.OnEndTag?.Invoke(Marshal.PtrToStringAnsi(name_)!);
+
+		context.OnEndTag?.Invoke(Marshal.PtrToStringAnsi(name)!);
 	};
 
-	static unsafe string DecodeString(Encoding enc, nint ptr, int sizeHint)
-		=> enc.GetString((byte*)ptr, sizeHint);
+
+	/// <summary>
+	/// Safely decode an sized string.
+	/// </summary>
+	/// <param name="enc">Encoding used by XML parser to decode string from pointer.</param>
+	/// <param name="ptr">Pointer to native string</param>
+	/// <param name="size">Size of native string (when its non C-Style string)</param>
+	/// <returns></returns>
+	protected static unsafe string DecodeString(Encoding enc, nint ptr, int size)
+		=> enc.GetString((byte*)ptr, size);
 
 	static readonly XML_CharacterDataHandler s_OnCharacterDataCallback = static (userData, buf, len) =>
 	{
@@ -109,6 +147,7 @@ partial class XmlParser
 	static readonly XML_CommentHandler s_OnCommentCallback = static (userData, data) =>
 	{
 		var context = GetParserState(userData);
+
 		context.OnComment?.Invoke(Marshal.PtrToStringAnsi(data)!);
 	};
 
