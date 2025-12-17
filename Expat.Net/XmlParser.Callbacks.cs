@@ -41,7 +41,7 @@ partial class XmlParser
 	/// <param name="userData">Pointer to an <see cref="GCHandle"/> wrapping our managed <see cref="XmlParser"/> instance</param>
 	/// <returns></returns>
 	/// <exception cref="InvalidOperationException">Callback was invoked but managed parser state is invalid.</exception>
-	protected static XmlParser GetParserState(nint userData)
+	static XmlParser GetParserState(nint userData)
 	{
 		var result = GCHandle.FromIntPtr(userData);
 
@@ -96,7 +96,7 @@ partial class XmlParser
 	/// <param name="ptr">Pointer to native string</param>
 	/// <param name="size">Size of native string (when its non C-Style string)</param>
 	/// <returns></returns>
-	protected static unsafe string DecodeString(Encoding enc, nint ptr, int size)
+	static unsafe string DecodeString(Encoding enc, nint ptr, int size)
 		=> enc.GetString((byte*)ptr, size);
 
 	static readonly XML_CharacterDataHandler s_OnCharacterDataCallback = static (userData, buf, len) =>

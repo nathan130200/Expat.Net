@@ -117,7 +117,7 @@ public sealed partial class XmlParser : IDisposable
 			{
 				Code = code,
 				LineNumber = _disposed ? 0 : XML_GetCurrentLineNumber(_parser),
-				ColumnNumber = _disposed ? 0 : XML_GetCurrentColumnNumber(_parser),
+				LinePosition = _disposed ? 0 : XML_GetCurrentColumnNumber(_parser),
 				ByteIndex = _disposed ? 0 : XML_GetCurrentByteIndex(_parser),
 				ByteCount = _disposed ? 0 : XML_GetCurrentByteCount(_parser),
 			};
