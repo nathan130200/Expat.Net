@@ -71,6 +71,8 @@ public sealed partial class XmlParser : IDisposable
 			if (_options.BillionLaughsAttackProtectionMaximumAmplification is float value)
 				XML_SetBillionLaughsAttackProtectionMaximumAmplification(_parser, value);
 		}
+
+		XML_SetParamEntityParsing(_parser, _options!.EntityParsing);
 	}
 
 	void ThrowIfDisposed()
@@ -85,7 +87,7 @@ public sealed partial class XmlParser : IDisposable
 		}
 	}
 
-	public void Suspend(bool resumable)
+	public void Suspend(bool resumable = true)
 	{
 		lock (_syncRoot)
 		{

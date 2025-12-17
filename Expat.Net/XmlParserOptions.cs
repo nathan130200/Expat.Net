@@ -4,6 +4,14 @@ namespace Expat;
 
 public class XmlParserOptions
 {
+	/// <summary>
+	/// Default XML parser options.
+	/// <list type="bullet">
+	/// <item><see cref="Encoding"/> = <see cref="Encoding.UTF8"/></item>
+	/// <item><see cref="EntityParsing"/> = <see cref="XmlEntityParsing.Never"/></item>
+	/// <item><see cref="HashSalt"/> = <c>0</c> (random)</item>
+	/// </list>
+	/// </summary>
 	public static XmlParserOptions Default { get; } = new()
 	{
 		Encoding = Encoding.UTF8,
@@ -11,15 +19,13 @@ public class XmlParserOptions
 		HashSalt = 0
 	};
 
-	Encoding? _encoding;
-
 	/// <summary>
 	/// Specifies a character encoding to use for the document. If this value is <see langword="null" /> it defaults to <see cref="Encoding.UTF8"/>.
 	/// </summary>
 	public Encoding Encoding
 	{
-		get => _encoding ?? Encoding.UTF8;
-		init => _encoding = value;
+		get => field ?? Encoding.UTF8;
+		init => field = value;
 	}
 
 	/// <summary>
