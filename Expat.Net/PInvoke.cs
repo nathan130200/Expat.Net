@@ -31,29 +31,29 @@ public static partial class PInvoke
 
 	static readonly Lazy<IEnumerable<string>> s_LibraryFileNames = new(() =>
 	{
-		List<string> result = [];
-
-		string[] extensions;
+		List<string> names = [];
+		List<string> extensions = [];
 
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-			extensions = [".dll"];
-		else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-			extensions = [".dylib", ".so", ".so.1"];
+			extensions.Add(".dll");
 		else
-			extensions = [".so", ".so.1"];
+			extensions.AddRange(".so", ".so.1");
+
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+			extensions.Add(".dylib");
 
 		foreach (var extension in extensions)
 		{
 #if DEBUG
-			result.Add($"expatd{extension}");
-			result.Add($"libexpatd{extension}");
+			names.Add($"expatd{extension}");
+			names.Add($"libexpatd{extension}");
 #endif
 
-			result.Add($"expat{extension}");
-			result.Add($"libexpat{extension}");
+			names.Add($"expat{extension}");
+			names.Add($"libexpat{extension}");
 		}
 
-		return result;
+		return names;
 
 	}, true);
 
