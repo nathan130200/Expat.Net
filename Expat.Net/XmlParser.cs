@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -17,6 +18,9 @@ public sealed partial class XmlParser : IDisposable
 	readonly GCHandle _userData;
 	XmlParserOptions _options;
 	readonly Lock _syncRoot = new();
+
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	public nint Handle => _parser;
 
 	/// <summary>
 	/// Constructor
