@@ -153,9 +153,22 @@ public sealed partial class XmlParser : IDisposable
 
 	public void Dispose()
 	{
-		// better synchronize here. will prevent early
-		// deletion of userData and invalidating unmanaged
-		// parser too early.
+		// 
+		// melhor sincronizar o dispose também. isso vai
+		// impedir que o user data dos callbacks nativos seja
+		// invalidado tão cedo. por outro lado isso pode
+		// causar deadlock, se o callback segurar/travar o parser.
+		//
+		// por exemplo, o código abaixo mostra um loop infinito
+		// segurando o parser infinitamente no callback "start tag"
+		// 
+		//	parser.OnStartTag += (...) { while(true); } 
+		//
+		//  deadlock abaixo, o parser nunca vai ser destruido.
+		//		parser.Dispose();
+		// por consequencia o parser nativo também não vai ser destruido.
+		// vazando memória tanto no lado gerenciado quanto no lado nativo.
+		//
 
 		lock (_syncRoot)
 		{
