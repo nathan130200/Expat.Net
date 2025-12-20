@@ -142,7 +142,7 @@ public sealed partial class XmlParser : IDisposable
 	/// Parse some more of the document. 
 	/// </summary>
 	/// <param name="buf">A buffer containing part (or perhaps all) of the document.</param>
-	/// <param name="len">The number of bytes of s that are part of the document.</param>
+	/// <param name="len">The number of bytes of <paramref name="buf"/> that are part of the document.</param>
 	/// <param name="isFinal">It informs the parser that this is the last piece of the document. Frequently, the last piece is empty (i.e. <paramref name="len"/> is zero)</param>
 	/// <exception cref="ExpatException">An exception is thrown if there is any error in the parser.</exception>
 	public void Parse(byte[] buf, int len, bool isFinal = false)

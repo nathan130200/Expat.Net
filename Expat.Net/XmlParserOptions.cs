@@ -5,12 +5,7 @@ namespace Expat;
 public class XmlParserOptions
 {
 	/// <summary>
-	/// Default XML parser options.
-	/// <list type="bullet">
-	/// <item><see cref="Encoding"/> = <see cref="Encoding.UTF8"/></item>
-	/// <item><see cref="EntityParsing"/> = <see cref="XmlEntityParsing.Never"/></item>
-	/// <item><see cref="HashSalt"/> = <c>0</c> (random)</item>
-	/// </list>
+	/// Default expat parsing options.
 	/// </summary>
 	public static XmlParserOptions Default { get; } = new()
 	{
