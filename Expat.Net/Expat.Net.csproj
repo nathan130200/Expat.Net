@@ -22,7 +22,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<PackageVersionSuffix>beta-1</PackageVersionSuffix>
+		<PackageVersionSuffix>beta-2</PackageVersionSuffix>
 		<PackageVersion>$(Version)-$(PackageVersionSuffix)</PackageVersion>
 	</PropertyGroup>
 
