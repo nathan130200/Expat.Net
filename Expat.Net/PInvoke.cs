@@ -42,7 +42,7 @@ public static partial class PInvoke
 			extensions.AddRange(".so", ".so.1");
 
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-			extensions.Add(".dylib");
+			extensions.Insert(0, ".dylib");
 
 		foreach (var extension in extensions)
 		{
