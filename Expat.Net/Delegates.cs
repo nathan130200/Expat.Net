@@ -26,3 +26,7 @@ public delegate void XML_CommentHandler(nint userData, nint data);
 [EditorBrowsable(EditorBrowsableState.Never)]
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 public delegate void XML_CdataSectionHandler(nint userData);
+
+[EditorBrowsable(EditorBrowsableState.Never)]
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+public delegate void XML_XmlDeclHandler(nint userData, nint version, nint encoding, int standalone);

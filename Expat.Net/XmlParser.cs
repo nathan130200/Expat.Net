@@ -50,16 +50,17 @@ public sealed partial class XmlParser : IDisposable
 	void Reset(bool invokeNative)
 	{
 		if (invokeNative)
-			XML_ParserReset(_parser, _options!.Encoding!.WebName);
+			XML_ParserReset(_parser, _options.Encoding.WebName);
 
 		XML_SetUserData(_parser, (nint)_userData);
-		XML_SetElementHandler(_parser, s_OnStartElementCallback, s_OnEndElementCallback);
+		XML_SetXmlDeclHandler(_parser, s_OnPrologCallback);
+		XML_SetProcessingInstructionHandler(_parser, s_OnProcessingInstructionCallback);
 		XML_SetCdataSectionHandler(_parser, s_OnCdataStartCallback, s_OnCdataEndCallback);
 		XML_SetCharacterDataHandler(_parser, s_OnCharacterDataCallback);
 		XML_SetCommentHandler(_parser, s_OnCommentCallback);
-		XML_SetProcessingInstructionHandler(_parser, s_OnProcessingInstructionCallback);
+		XML_SetElementHandler(_parser, s_OnStartElementCallback, s_OnEndElementCallback);
 
-		if (_options!.HashSalt > 0)
+		if (_options.HashSalt > 0)
 			XML_SetHashSalt(_parser, _options.HashSalt);
 
 		{
@@ -72,12 +73,16 @@ public sealed partial class XmlParser : IDisposable
 				XML_SetBillionLaughsAttackProtectionMaximumAmplification(_parser, value);
 		}
 
-		XML_SetParamEntityParsing(_parser, _options!.EntityParsing);
+		if (_options.EntityParsing.HasValue)
+			_ = XML_SetParamEntityParsing(_parser, _options.EntityParsing.Value);
 	}
 
 	void ThrowIfDisposed()
 		=> ObjectDisposedException.ThrowIf(_disposed, this);
 
+	/// <summary>
+	/// Reset the parser.
+	/// </summary>
 	public void Reset()
 	{
 		lock (_syncRoot)
@@ -87,6 +92,10 @@ public sealed partial class XmlParser : IDisposable
 		}
 	}
 
+	/// <summary>
+	/// Suspend the parser.
+	/// </summary>
+	/// <param name="resumable">Determines whether the parser can be resumed later.</param>
 	public void Suspend(bool resumable = true)
 	{
 		lock (_syncRoot)
@@ -96,6 +105,9 @@ public sealed partial class XmlParser : IDisposable
 		}
 	}
 
+	/// <summary>
+	/// Resumes the parser.
+	/// </summary>
 	public void Resume()
 	{
 		lock (_syncRoot)
@@ -126,52 +138,52 @@ public sealed partial class XmlParser : IDisposable
 		}
 	}
 
-	public void Parse(byte[] buf, int len)
+	/// <summary>
+	/// Parse some more of the document. 
+	/// </summary>
+	/// <param name="buf">A buffer containing part (or perhaps all) of the document.</param>
+	/// <param name="len">The number of bytes of s that are part of the document.</param>
+	/// <param name="isFinal">It informs the parser that this is the last piece of the document. Frequently, the last piece is empty (i.e. <paramref name="len"/> is zero)</param>
+	/// <exception cref="ExpatException">An exception is thrown if there is any error in the parser.</exception>
+	public void Parse(byte[] buf, int len, bool isFinal = false)
 	{
 		ThrowIfDisposed();
 
 		lock (_syncRoot)
 		{
-			ThrowIfFailed(XML_Parse(_parser, buf, len, len <= 0));
+			ThrowIfFailed(XML_Parse(_parser, buf, len, isFinal));
 		}
 	}
 
-	public bool TryParse(byte[] buf, int len, out XmlError error)
+	/// <summary>
+	/// Try parse some more of the document. The difference is that this function does not throw an exception if the expat returns an error.
+	/// </summary>
+	/// <param name="buf">A buffer containing part (or perhaps all) of the document.</param>
+	/// <param name="len">The number of bytes of s that are part of the document.</param>
+	/// <param name="isFinal">It informs the parser that this is the last piece of the document. Frequently, the last piece is empty (i.e. <paramref name="len"/> is zero)</param>
+	/// <returns>A tuple containing whether the function was invoked successfully and the error code.</returns>
+	public (bool Result, XmlError Error) TryParse(byte[] buf, int len, bool isFinal = false)
 	{
 		ThrowIfDisposed();
 
 		lock (_syncRoot)
 		{
-			error = 0;
+			XmlError error = 0;
 
-			var status = XML_Parse(_parser, buf, len, len <= 0);
+			var status = XML_Parse(_parser, buf, len, isFinal);
 
 			if (status != XmlStatus.Success)
 				error = XML_GetErrorCode(_parser);
 
-			return status == XmlStatus.Success;
+			return new(status == XmlStatus.Success, error);
 		}
 	}
 
+	/// <summary>
+	/// Dispose parser and release allocated memory.
+	/// </summary>
 	public void Dispose()
 	{
-		// 
-		// melhor sincronizar o dispose também. isso vai
-		// impedir que o user data dos callbacks nativos seja
-		// invalidado tão cedo. por outro lado isso pode
-		// causar deadlock, se o callback segurar/travar o parser.
-		//
-		// por exemplo, o código abaixo mostra um loop infinito
-		// segurando o parser infinitamente no callback "start tag"
-		// 
-		//	parser.OnStartTag += (...) { while(true); } 
-		//
-		//  deadlock abaixo, o parser nunca vai ser destruido.
-		//		parser.Dispose();
-		// por consequencia o parser nativo também não vai ser destruido.
-		// vazando memória tanto no lado gerenciado quanto no lado nativo.
-		//
-
 		lock (_syncRoot)
 		{
 			if (_disposed)

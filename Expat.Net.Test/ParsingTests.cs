@@ -30,7 +30,7 @@ public class ParsingTests
 			});
 		};
 
-		var result = parser.TryParse(sample, sample.Length, out var error);
+		var (result, error) = parser.TryParse(sample, sample.Length);
 
 		Console.WriteLine("status: " + result);
 		Console.WriteLine("error: " + error + " (" + error.Message + ")");
@@ -51,11 +51,29 @@ public class ParsingTests
 
 		using var parser = new XmlParser();
 
-		var exception = Assert.Throws<ExpatException>(() => parser.Parse(str, str.Length));
+		var exception = Assert.Throws<ExpatException>(() => parser.Parse(str, str.Length, true));
 
-		var code = (XmlError)exception!.Data["Code"]!;
+		Assert.Multiple(() =>
+		{
+			Assert.That(exception, Is.Not.Null);
+			Assert.That(exception.Code, Is.EqualTo(XmlError.InvalidToken));
+		});
+	}
 
-		Assert.That(code, Is.EqualTo(XmlError.InvalidToken));
+	[Test]
+	public void TryParseInvalidXml()
+	{
+		var str = "<foo xmlns='&'/"u8.ToArray();
+
+		using var parser = new XmlParser();
+
+		var (result, error) = parser.TryParse(str, str.Length, true);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(result, Is.False);
+			Assert.That(error, Is.EqualTo(XmlError.InvalidToken));
+		});
 	}
 
 	[Test]
@@ -174,11 +192,13 @@ public class ParsingTests
 		Console.WriteLine("CDATA: " + result);
 	}
 
-	[Test]
-	public async Task ParsePI()
-	{
-		string target = "foo", data = "bar";
+	const string c_EmptyString = "";
 
+	[Test]
+	[TestCase("mso-application", c_EmptyString)]
+	[TestCase("strict", "value")]
+	public async Task ParsePI(string target, string data)
+	{
 		// CDATA also need toplevel start tag
 		var buf = Encoding.ASCII.GetBytes($"<?{target} {data}?>");
 
@@ -195,9 +215,55 @@ public class ParsingTests
 
 		var result = await tcs.Task;
 
-		Assert.That(result.target, Is.EqualTo(target));
-		Assert.That(result.data, Is.EqualTo(data));
+		Assert.Multiple(() =>
+		{
+			Assert.That(result.target, Is.EqualTo(target));
+			Assert.That(result.data, Is.EqualTo(data));
+		});
 
 		Console.WriteLine("PI: target=" + result.target + ", data=" + result.data);
+	}
+
+	[Test]
+	[TestCase(null, null)]
+	[TestCase(null, true)]
+	[TestCase(null, false)]
+	[TestCase("utf-8", null)]
+	[TestCase("utf-8", true)]
+	[TestCase("utf-8", false)]
+	public async Task ParseProlog(string? encoding = null, bool? standalone = null)
+	{
+		using var parser = new XmlParser();
+
+		var tcs = new TaskCompletionSource<(string version, string? encoding, bool? standalone)>();
+
+		parser.OnProlog += (version, encoding, standalone) =>
+		{
+			tcs.TrySetResult((version, encoding, standalone));
+		};
+
+		var sb = new StringBuilder("<?xml version='1.0'");
+
+		if (encoding != null)
+			sb.AppendFormat(" encoding='{0}'", encoding);
+
+		if (standalone is bool b)
+			sb.AppendFormat(" standalone='{0}'", b ? "yes" : "no");
+
+		var buf = Encoding.UTF8.GetBytes(sb.Append("?>\n<root/>").ToString());
+
+		parser.Parse(buf, buf.Length, true);
+
+		var result = await tcs.Task;
+
+		Console.WriteLine("-- result --\nversion: {0}\nencoding:{1}\nstandalone: {2}",
+			result.version, result.encoding, result.standalone);
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(result.version, Is.EqualTo("1.0"));
+			Assert.That(result.encoding, Is.EqualTo(encoding));
+			Assert.That(result.standalone, Is.EqualTo(standalone));
+		});
 	}
 }

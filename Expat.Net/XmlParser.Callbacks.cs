@@ -3,44 +3,51 @@ using System.Text;
 
 namespace Expat;
 
+#nullable enable
+
+public delegate void StartTagEventHandler(string tagName, IReadOnlyDictionary<string, string> attributes);
+public delegate void EndTagEventHandler(string tagName);
+public delegate void TextEventHandler(string value);
+public delegate void PrologEventHandler(string version, string? encoding, bool? standalone);
+public delegate void ProcessingInstructionEventHandler(string target, string data);
+
 partial class XmlParser
 {
 	/// <summary>
 	/// Event invoked when start tag is parsed.
 	/// </summary>
-	public event Action<string, IReadOnlyDictionary<string, string>>? OnStartTag;
+	public event StartTagEventHandler? OnStartTag;
 
 	/// <summary>
 	/// Event invoked when end tag is parsed.
 	/// </summary>
-	public event Action<string>? OnEndTag;
+	public event EndTagEventHandler? OnEndTag;
+
+	/// <summary>
+	/// Event invoked when XML prolog is parsed.
+	/// </summary>
+	public event PrologEventHandler? OnProlog;
 
 	/// <summary>
 	/// Event invoked when text node is parsed.
 	/// </summary>
-	public event Action<string>? OnText;
+	public event TextEventHandler? OnText;
 
 	/// <summary>
 	/// Event invoked when cdata node is parsed.
 	/// </summary>
-	public event Action<string>? OnCdata;
+	public event TextEventHandler? OnCdata;
 
 	/// <summary>
 	/// Event invoked when comment node is parsed.
 	/// </summary>
-	public event Action<string>? OnComment;
+	public event TextEventHandler? OnComment;
 
 	/// <summary>
 	/// Event invoked when processing instruction is parsed.
 	/// </summary>
-	public event Action<string, string>? OnProcessingInstruction;
+	public event ProcessingInstructionEventHandler? OnProcessingInstruction;
 
-	/// <summary>
-	/// Gets the managed parser state from callback.
-	/// </summary>
-	/// <param name="userData">Pointer to an <see cref="GCHandle"/> wrapping our managed <see cref="XmlParser"/> instance</param>
-	/// <returns></returns>
-	/// <exception cref="InvalidOperationException">Callback was invoked but managed parser state is invalid.</exception>
 	static XmlParser GetParserState(nint userData)
 	{
 		var result = GCHandle.FromIntPtr(userData);
@@ -159,5 +166,27 @@ partial class XmlParser
 			Marshal.PtrToStringAnsi(target)!,
 			Marshal.PtrToStringAnsi(data)!
 		);
+	};
+
+	static readonly XML_XmlDeclHandler s_OnPrologCallback = static (userData, version, encoding, standalone) =>
+	{
+		var context = GetParserState(userData);
+
+		if (context.OnProlog == null)
+			return;
+
+		if (version == 0)
+			return;
+
+		var mVersion = Marshal.PtrToStringAnsi(version)!;
+		var mEncoding = Marshal.PtrToStringAnsi(encoding);
+		bool? mStandalone = standalone switch
+		{
+			1 => true,
+			0 => false,
+			_ => null
+		};
+
+		context.OnProlog(mVersion, mEncoding, mStandalone);
 	};
 }

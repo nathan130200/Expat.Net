@@ -12,6 +12,7 @@ public class LibraryTests
 
 		readonly int _counter;
 		readonly nint _value;
+		readonly long _timestamp;
 
 		public NativeXmlParser() : this("UTF-8")
 		{
@@ -20,11 +21,13 @@ public class LibraryTests
 
 		public NativeXmlParser(string? encoding)
 		{
+			_timestamp = Stopwatch.GetTimestamp();
+
 			_value = XML_ParserCreate(encoding);
 			Assert.That(_value, Is.Not.EqualTo(0));
 			_counter = g_Counter++;
 
-			Console.WriteLine("NativeXmlParser::NativeXmlParser(): Create #" + _counter + " parser");
+			Console.WriteLine($"NativeXmlParser::NativeXmlParser(): Create parser. [#{_counter}]");
 		}
 
 		public nint Handle => _value;
@@ -32,7 +35,10 @@ public class LibraryTests
 		public void Dispose()
 		{
 			XML_ParserFree(_value);
-			Console.WriteLine("NativeXmlParser::~NativeXmlParser(): Dispose #" + _counter + " parser");
+
+			var elapsed = Stopwatch.GetElapsedTime(_timestamp);
+
+			Console.WriteLine($"NativeXmlParser::~NativeXmlParser(): Dispose parser [#{_counter}] (time allocated: {elapsed.TotalSeconds:F2})");
 		}
 
 		public static implicit operator nint(NativeXmlParser self) => self._value;

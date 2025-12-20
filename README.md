@@ -17,8 +17,10 @@ The goal is to combine Expat’s performance and streaming model with a controll
 
 `XmlParser` exposes a SAX-like callback model:
 
-* `OnStartElement`
-* `OnEndElement`
+* `OnProlog`
+* `OnProcessingInstruction`
+* `OnStartTag`
+* `OnEndTag`
 * `OnText`
 * `OnCdata`
 * `OnComment`

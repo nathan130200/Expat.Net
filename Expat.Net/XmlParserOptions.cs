@@ -15,7 +15,6 @@ public class XmlParserOptions
 	public static XmlParserOptions Default { get; } = new()
 	{
 		Encoding = Encoding.UTF8,
-		EntityParsing = XmlEntityParsing.Never,
 		HashSalt = 0
 	};
 
@@ -45,7 +44,7 @@ public class XmlParserOptions
 	/// <summary>
 	/// This enables parsing of parameter entities, including the external parameter entity that is the external DTD subset.
 	/// </summary>
-	public XmlEntityParsing EntityParsing { get; init; }
+	public XmlEntityParsing? EntityParsing { get; init; }
 
 	/// <summary>
 	/// Sets the hash salt to use for internal hash calculations. Helps in preventing DoS attacks based on predicting hash function behavior. In order to have an effect this must be called before parsing has started.
