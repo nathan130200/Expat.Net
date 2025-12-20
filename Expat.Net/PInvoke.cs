@@ -63,7 +63,7 @@ public static partial class PInvoke
 	{
 		var path = Environment.GetEnvironmentVariable("EXPAT_LIBRARY_PATH");
 
-		if (NativeLibrary.TryLoad(path, assembly, searchPath, out var handle))
+		if (!string.IsNullOrWhiteSpace(path) && NativeLibrary.TryLoad(path, assembly, searchPath, out var handle))
 		{
 			s_LibraryInstance = handle;
 			return true;
