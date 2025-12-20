@@ -31,7 +31,7 @@ public static partial class PInvoke
 	static nint s_LibraryInstance;
 	static readonly Lock s_Lock = new();
 
-	static readonly Lazy<IEnumerable<string>> s_LibraryFileNames = new(() =>
+	static readonly Lazy<IEnumerable<string>> s_CommonLibraryNames = new(() =>
 	{
 		List<string> names = [];
 		List<string> extensions = [];
@@ -59,9 +59,22 @@ public static partial class PInvoke
 
 	}, true);
 
+	static bool TryLoadFromEnvironment(Assembly assembly, DllImportSearchPath? searchPath)
+	{
+		var path = Environment.GetEnvironmentVariable("EXPAT_LIBRARY_PATH");
+
+		if (NativeLibrary.TryLoad(path, assembly, searchPath, out var handle))
+		{
+			s_LibraryInstance = handle;
+			return true;
+		}
+
+		return false;
+	}
+
 	static PInvoke()
 	{
-		NativeLibrary.SetDllImportResolver(typeof(PInvoke).Assembly, static (libraryName, assembly, searchPaths) =>
+		NativeLibrary.SetDllImportResolver(typeof(PInvoke).Assembly, static (libraryName, assembly, searchPath) =>
 		{
 			if (libraryName == s_LibName)
 			{
@@ -69,9 +82,12 @@ public static partial class PInvoke
 				{
 					if (s_LibraryInstance == 0)
 					{
-						foreach (var fileName in s_LibraryFileNames.Value)
+						if (TryLoadFromEnvironment(assembly, searchPath))
+							return s_LibraryInstance;
+
+						foreach (var fileName in s_CommonLibraryNames.Value)
 						{
-							if (NativeLibrary.TryLoad(fileName, assembly, searchPaths, out var result))
+							if (NativeLibrary.TryLoad(fileName, assembly, searchPath, out var result))
 							{
 								s_LibraryInstance = result;
 								break;
