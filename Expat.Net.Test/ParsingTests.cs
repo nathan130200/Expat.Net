@@ -263,7 +263,11 @@ public class ParsingTests
 		if (standalone != XmlStandalone.NotSet)
 			sb.AppendFormat(" standalone='{0}'", standalone == XmlStandalone.Yes ? "yes" : "no");
 
-		var buf = Encoding.UTF8.GetBytes(sb.Append("?>\n<root/>").ToString());
+		var xml = sb.Append("?>\n<root/>").ToString();
+
+		var buf = Encoding.UTF8.GetBytes(xml);
+
+		Console.WriteLine("Trying to parse XML:\n" + xml + "\n");
 
 		parser.Parse(buf, buf.Length, true);
 
