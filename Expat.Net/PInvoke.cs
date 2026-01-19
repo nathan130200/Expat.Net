@@ -31,7 +31,7 @@ public static partial class PInvoke
 	static nint s_LibraryInstance;
 	static readonly Lock s_Lock = new();
 
-	static readonly Lazy<IEnumerable<string>> s_CommonLibraryNames = new(() =>
+	static readonly Lazy<IEnumerable<string>> s_LibraryNameHints = new(() =>
 	{
 		List<string> names = [];
 		List<string> extensions = [];
@@ -85,7 +85,7 @@ public static partial class PInvoke
 						if (TryLoadFromEnvironment(assembly, searchPath))
 							return s_LibraryInstance;
 
-						foreach (var fileName in s_CommonLibraryNames.Value)
+						foreach (var fileName in s_LibraryNameHints.Value)
 						{
 							if (NativeLibrary.TryLoad(fileName, assembly, searchPath, out var result))
 							{
@@ -110,7 +110,8 @@ public static partial class PInvoke
 	public static extern nint XML_ParserCreate(string? encoding);
 
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void XML_ParserReset(nint parser, string? encoding = null);
+	[return: MarshalAs(UnmanagedType.Bool)]
+	public static extern bool XML_ParserReset(nint parser, string? encoding = null);
 
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void XML_SetUserData(nint parser, nint userData);
@@ -121,14 +122,15 @@ public static partial class PInvoke
 	// ----------------------------------------------------------------------- //
 
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern int XML_SetParamEntityParsing(nint parser, XmlEntityParsing parsing);
+	[return: MarshalAs(UnmanagedType.Bool)]
+	public static extern bool XML_SetParamEntityParsing(nint parser, XmlEntityParsing parsing);
 
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
 	[return: MarshalAs(UnmanagedType.Bool)]
 	public static extern bool XML_SetHashSalt(nint parser, ulong salt);
 
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern bool XML_SetBillionLaughsAttackProtectionActivationThreshold(nint parser, ulong activationThresholdBytes);
+	public static extern bool XML_SetBillionLaughsAttackProtectionActivationThreshold(nint parser, long activationThresholdBytes);
 
 	[DllImport(s_LibName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern bool XML_SetBillionLaughsAttackProtectionMaximumAmplification(nint parser, float maximumAmplificationFactor);

@@ -1,12 +1,15 @@
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using static Expat.PInvoke;
 
 namespace Expat;
 
 /// <summary>
-/// Represents the expat xml parser wrapper class.
+/// Represents the unmanaged expat XML parser wrapper.
 /// </summary>
 public sealed partial class XmlParser : IDisposable
 {
@@ -27,16 +30,18 @@ public sealed partial class XmlParser : IDisposable
 	/// <summary>
 	/// Constructor
 	/// </summary>
-	/// <param name="options">Parser configuration options.</param>
+	/// <param name="options">Parser init options.</param>
 	public XmlParser(XmlParserOptions? options = default)
 	{
 		_options = options ?? XmlParserOptions.Default;
 
-		_parser = XML_ParserCreate(_options.Encoding!.WebName);
+		_parser = XML_ParserCreate(_options.Encoding.WebName.ToUpper());
+
+		Debug.Assert(_parser != 0);
 
 		if (_parser == 0)
 		{
-			throw new ExpatException("Failed to create expat parser interface!")
+			throw new ExpatException("Failed to create native expat parser interface!")
 			{
 				Code = XmlError.NoMemory
 			};
@@ -47,10 +52,19 @@ public sealed partial class XmlParser : IDisposable
 		Reset(false);
 	}
 
+	public XmlError GetLastError()
+	{
+		if (_disposed)
+			return XmlError.UnexpectedState;
+
+		return XML_GetErrorCode(_parser);
+	}
+
 	void Reset(bool invokeNative)
 	{
 		if (invokeNative)
-			XML_ParserReset(_parser, _options.Encoding.WebName);
+			if (!XML_ParserReset(_parser, _options.Encoding.WebName.ToUpper()))
+				Trace.WriteLine($"XML_ParserReset(0x{_parser:x8}, {_options.Encoding.WebName}) failed. (code: {GetLastError()})");
 
 		XML_SetUserData(_parser, (nint)_userData);
 		XML_SetXmlDeclHandler(_parser, s_OnPrologCallback);
@@ -60,29 +74,59 @@ public sealed partial class XmlParser : IDisposable
 		XML_SetCommentHandler(_parser, s_OnCommentCallback);
 		XML_SetElementHandler(_parser, s_OnStartElementCallback, s_OnEndElementCallback);
 
-		if (_options.HashSalt > 0)
-			XML_SetHashSalt(_parser, _options.HashSalt);
+		{
+			if (_options.HashSalt is ulong value)
+			{
+				if (value == 0)
+					value = BitConverter.ToUInt64(RandomNumberGenerator.GetBytes(8));
+
+				if (!XML_SetHashSalt(_parser, value))
+					Trace.WriteLine($"XML_SetHashSalt(0x{(int)_parser:x8}, {value}) failed.");
+			}
+		}
 
 		{
-			if (_options.BillionLaughsAttackProtectionActivationThreshold is ulong value)
-				XML_SetBillionLaughsAttackProtectionActivationThreshold(_parser, value);
+			if (_options.BillionLaughsAttackProtectionActivationThreshold is long value && value > 0)
+				if (!XML_SetBillionLaughsAttackProtectionActivationThreshold(_parser, value))
+					Trace.WriteLine($"XML_SetBillionLaughsAttackProtectionActivationThreshold(0x{_parser:x8}, {value}) failed.");
 		}
 
 		{
 			if (_options.BillionLaughsAttackProtectionMaximumAmplification is float value)
-				XML_SetBillionLaughsAttackProtectionMaximumAmplification(_parser, value);
+				if (!XML_SetBillionLaughsAttackProtectionMaximumAmplification(_parser, value))
+					Trace.WriteLine($"XML_SetBillionLaughsAttackProtectionMaximumAmplification(0x{_parser:x8}, {value}) failed.");
 		}
 
-		if (_options.EntityParsing.HasValue)
-			_ = XML_SetParamEntityParsing(_parser, _options.EntityParsing.Value);
+		{
+			if (_options.EntityParsing is XmlEntityParsing value)
+				if (!XML_SetParamEntityParsing(_parser, value))
+					Trace.WriteLine($"XML_SetParamEntityParsing(0x{_parser:x8}, {value}) failed.");
+		}
+
+		{
+			if (_options.UseForeignDTD is bool value)
+			{
+				var result = XML_UseForeignDTD(_parser, value);
+
+				if (result != XmlError.None)
+				{
+					Trace.WriteLine($"XML_UseForeignDTD(0x{_parser:x8}, {value}) failed. (code: {result})");
+
+					if (result != XmlError.FeatureRequiresXmlDtd)
+						ThrowException(result);
+				}
+			}
+		}
 	}
 
 	void ThrowIfDisposed()
 		=> ObjectDisposedException.ThrowIf(_disposed, this);
 
 	/// <summary>
-	/// Reset the parser.
+	/// Clean up the memory structures maintained by the parser so that it may be used again.
+	/// After this has been called, the parser is ready to start parsing a new document. 
 	/// </summary>
+	/// <exception cref="ObjectDisposedException">If the parser has been disposed.</exception>
 	public void Reset()
 	{
 		lock (_syncRoot)
@@ -93,9 +137,24 @@ public sealed partial class XmlParser : IDisposable
 	}
 
 	/// <summary>
-	/// Suspend the parser.
+	/// Stops parsing. Some call-backs may still follow because they would otherwise get lost, including
+	/// <list type="bullet">
+	/// <item>the end element handler for empty elements when stopped in the start element handler</item>
+	/// <item>the end namespace declaration handler when stopped in the end element handler</item>
+	/// <item>the character data handler when stopped in the character data handler while making multiple call-backs on a contiguous chunk of characters</item>
+	/// </list>
 	/// </summary>
 	/// <param name="resumable">Determines whether the parser can be resumed later.</param>
+	/// <exception cref="ObjectDisposedException">If the parser has been disposed.</exception>
+	/// <exception cref="ExpatException">
+	/// Throws if any conditions are met:
+	/// <list type="bullet">
+	/// <item>when stopping or suspending a parser before it has started</item>
+	/// <item>when suspending an already suspended parser</item>
+	/// <item>when the parser has already finished</item>
+	/// <item>when suspending while parsing an external PE</item>
+	/// </list>
+	/// </exception>
 	public void Suspend(bool resumable = true)
 	{
 		lock (_syncRoot)
@@ -106,8 +165,10 @@ public sealed partial class XmlParser : IDisposable
 	}
 
 	/// <summary>
-	/// Resumes the parser.
+	/// Resumes parsing after it has been suspended with <see cref="Suspend"/>
 	/// </summary>
+	/// <exception cref="ObjectDisposedException">If the parser has been disposed.</exception>
+	/// <exception cref="ExpatException">Throws if the parser was not currently suspended.</exception>
 	public void Resume()
 	{
 		lock (_syncRoot)
@@ -117,7 +178,7 @@ public sealed partial class XmlParser : IDisposable
 		}
 	}
 
-	void ThrowIfFailed(XmlStatus status)
+	void ThrowIfFailed(XmlStatus status, [CallerArgumentExpression(nameof(status))] string? expression = default)
 	{
 		if (status != XmlStatus.Success)
 		{
@@ -125,17 +186,38 @@ public sealed partial class XmlParser : IDisposable
 				? XmlError.UnexpectedState
 				: XML_GetErrorCode(_parser);
 
-			var exception = new ExpatException(XML_ErrorString(code))
-			{
-				Code = code,
-				LineNumber = _disposed ? 0 : XML_GetCurrentLineNumber(_parser),
-				LinePosition = _disposed ? 0 : XML_GetCurrentColumnNumber(_parser),
-				ByteIndex = _disposed ? 0 : XML_GetCurrentByteIndex(_parser),
-				ByteCount = _disposed ? 0 : XML_GetCurrentByteCount(_parser),
-			};
-
-			throw exception;
+			ThrowException(code, expression);
 		}
+	}
+
+	void ThrowException(XmlError error, string? expression = null)
+	{
+		var sb = new StringBuilder();
+
+		if (expression != null)
+		{
+			var methodNameEnd = expression.IndexOf('(');
+
+			if (methodNameEnd != -1)
+				expression = $"{expression[0..methodNameEnd]}(0x{_parser:x8})";
+
+			sb.Append($"{expression} = {error}: ");
+		}
+
+		sb.Append(XML_ErrorString(error));
+
+		var exception = new ExpatException(sb.ToString())
+		{
+			Code = error,
+			LineNumber = _disposed ? 0 : XML_GetCurrentLineNumber(_parser),
+			LinePosition = _disposed ? 0 : XML_GetCurrentColumnNumber(_parser),
+			ByteIndex = _disposed ? 0 : XML_GetCurrentByteIndex(_parser),
+			ByteCount = _disposed ? 0 : XML_GetCurrentByteCount(_parser),
+		};
+
+		Trace.WriteLine(exception);
+
+		throw exception;
 	}
 
 	/// <summary>

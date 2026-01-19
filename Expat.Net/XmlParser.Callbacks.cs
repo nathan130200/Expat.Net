@@ -6,9 +6,13 @@ namespace Expat;
 #nullable enable
 
 public delegate void StartTagEventHandler(string tagName, IReadOnlyDictionary<string, string> attributes);
+
 public delegate void EndTagEventHandler(string tagName);
+
 public delegate void TextEventHandler(string value);
-public delegate void PrologEventHandler(string version, string? encoding, bool? standalone);
+
+public delegate void PrologEventHandler(string version, string? encoding, XmlStandalone standalone);
+
 public delegate void ProcessingInstructionEventHandler(string target, string data);
 
 partial class XmlParser
@@ -168,25 +172,27 @@ partial class XmlParser
 		);
 	};
 
-	static readonly XML_XmlDeclHandler s_OnPrologCallback = static (userData, version, encoding, standalone) =>
+	static readonly XML_XmlDeclHandler s_OnPrologCallback = static (userData, versionPtr, encodingPtr, isStandalone) =>
 	{
 		var context = GetParserState(userData);
 
 		if (context.OnProlog == null)
 			return;
 
-		if (version == 0)
+		if (versionPtr == 0)
 			return;
 
-		var mVersion = Marshal.PtrToStringAnsi(version)!;
-		var mEncoding = Marshal.PtrToStringAnsi(encoding);
-		bool? mStandalone = standalone switch
+		var version = Marshal.PtrToStringAnsi(versionPtr)!;
+
+		var encoding = Marshal.PtrToStringAnsi(encodingPtr);
+
+		XmlStandalone standalone = isStandalone switch
 		{
-			1 => true,
-			0 => false,
-			_ => null
+			1 => XmlStandalone.Yes,
+			0 => XmlStandalone.No,
+			_ => XmlStandalone.NotSet
 		};
 
-		context.OnProlog(mVersion, mEncoding, mStandalone);
+		context.OnProlog(version, encoding, standalone);
 	};
 }

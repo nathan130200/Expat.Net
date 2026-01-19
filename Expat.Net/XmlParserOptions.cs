@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Expat;
 
-public class XmlParserOptions
+public record class XmlParserOptions
 {
 	/// <summary>
 	/// Default expat parsing options.
@@ -10,7 +10,8 @@ public class XmlParserOptions
 	public static XmlParserOptions Default { get; } = new()
 	{
 		Encoding = Encoding.UTF8,
-		HashSalt = 0
+		EntityParsing = XmlEntityParsing.Never,
+		UseForeignDTD = false,
 	};
 
 	/// <summary>
@@ -23,9 +24,19 @@ public class XmlParserOptions
 	}
 
 	/// <summary>
+	/// Allows an XML document to reference a set of markup declarations stored in a separate file 
+	/// (usually a .dtd file or URL) rather than embedding them directly within the XML document.
+	/// </summary>
+	public bool? UseForeignDTD
+	{
+		get;
+		init;
+	}
+
+	/// <summary>
 	/// Sets number of output bytes (including amplification from entity expansion and reading DTD files) needed to activate protection against billion laughs attacks (default: <c>8 MiB</c>)
 	/// </summary>
-	public ulong? BillionLaughsAttackProtectionActivationThreshold { get; init; }
+	public long? BillionLaughsAttackProtectionActivationThreshold { get; init; }
 
 	/// <summary>
 	/// Sets the maximum tolerated amplification factor for protection against billion laughs attacks (default: <c>100</c>)
@@ -42,7 +53,7 @@ public class XmlParserOptions
 	public XmlEntityParsing? EntityParsing { get; init; }
 
 	/// <summary>
-	/// Sets the hash salt to use for internal hash calculations. Helps in preventing DoS attacks based on predicting hash function behavior. In order to have an effect this must be called before parsing has started.
+	/// Sets the hash salt to use for internal hash calculations. Helps in preventing DoS attacks based on predicting hash function behavior.
 	/// </summary>
-	public ulong HashSalt { get; init; }
+	public ulong? HashSalt { get; init; }
 }

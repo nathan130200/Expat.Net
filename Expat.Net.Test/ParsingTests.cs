@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 
 namespace Expat.Test;
@@ -68,6 +69,9 @@ public class ParsingTests
 		using var parser = new XmlParser();
 
 		var (result, error) = parser.TryParse(str, str.Length, true);
+
+		Console.WriteLine("result: " + result);
+		Console.WriteLine("error: " + error);
 
 		Assert.Multiple(() =>
 		{
@@ -171,7 +175,7 @@ public class ParsingTests
 	{
 		var text = "Hello World";
 
-		// CDATA also need toplevel start tag
+		// CDATA need top level start tag
 		var buf = Encoding.ASCII.GetBytes("<root><![CDATA[" + text + "]]></root>");
 
 		using var parser = new XmlParser();
@@ -195,12 +199,21 @@ public class ParsingTests
 	const string c_EmptyString = "";
 
 	[Test]
-	[TestCase("mso-application", c_EmptyString)]
+	[TestCase("mso-application")]
 	[TestCase("strict", "value")]
-	public async Task ParsePI(string target, string data)
+	[TestCase("not-strict", "value with spaces")]
+	public async Task ParsePI(string target, string? data = "")
 	{
-		// CDATA also need toplevel start tag
-		var buf = Encoding.ASCII.GetBytes($"<?{target} {data}?>");
+		var sb = new StringBuilder($"<?{target}");
+
+		if (!string.IsNullOrWhiteSpace(data))
+			sb.Append(' ').Append(data);
+
+		var xml = sb.Append("?>").ToString();
+
+		var buf = Encoding.ASCII.GetBytes(xml);
+
+		Console.WriteLine("Trying to parse PI: " + xml);
 
 		using var parser = new XmlParser();
 
@@ -225,17 +238,17 @@ public class ParsingTests
 	}
 
 	[Test]
-	[TestCase(null, null)]
-	[TestCase(null, true)]
-	[TestCase(null, false)]
-	[TestCase("utf-8", null)]
-	[TestCase("utf-8", true)]
-	[TestCase("utf-8", false)]
-	public async Task ParseProlog(string? encoding = null, bool? standalone = null)
+	[TestCase(null, XmlStandalone.NotSet)]
+	[TestCase(null, XmlStandalone.Yes)]
+	[TestCase(null, XmlStandalone.No)]
+	[TestCase("utf-8", XmlStandalone.NotSet)]
+	[TestCase("utf-8", XmlStandalone.Yes)]
+	[TestCase("utf-8", XmlStandalone.No)]
+	public async Task ParseProlog(string? encoding, XmlStandalone standalone)
 	{
 		using var parser = new XmlParser();
 
-		var tcs = new TaskCompletionSource<(string version, string? encoding, bool? standalone)>();
+		var tcs = new TaskCompletionSource<(string version, string? encoding, XmlStandalone standalone)>();
 
 		parser.OnProlog += (version, encoding, standalone) =>
 		{
@@ -247,8 +260,8 @@ public class ParsingTests
 		if (encoding != null)
 			sb.AppendFormat(" encoding='{0}'", encoding);
 
-		if (standalone is bool b)
-			sb.AppendFormat(" standalone='{0}'", b ? "yes" : "no");
+		if (standalone != XmlStandalone.NotSet)
+			sb.AppendFormat(" standalone='{0}'", standalone == XmlStandalone.Yes ? "yes" : "no");
 
 		var buf = Encoding.UTF8.GetBytes(sb.Append("?>\n<root/>").ToString());
 
@@ -265,5 +278,95 @@ public class ParsingTests
 			Assert.That(result.encoding, Is.EqualTo(encoding));
 			Assert.That(result.standalone, Is.EqualTo(standalone));
 		});
+	}
+
+	[Test]
+	[TestCase(10)]
+	[TestCase(100)]
+	[TestCase(1000)]
+	[TestCase(10000)]
+	//[TestCase(100000)] DO NOT - This took ~40 seconds to test. Collected ~270MB of text nodes parsed.
+	public void BillionLaughsAttackTest(int factorScale)
+	{
+		var buf =
+			"""
+			<?xml version="1.0"?>
+			<!DOCTYPE lolz [
+			 <!ENTITY lol "lol">
+			 <!ELEMENT lolz (#PCDATA)>
+			 <!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+			 <!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;">
+			 <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+			 <!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;">
+			 <!ENTITY lol5 "&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;">
+			 <!ENTITY lol6 "&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;">
+			 <!ENTITY lol7 "&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;">
+			 <!ENTITY lol8 "&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;">
+			 <!ENTITY lol9 "&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;">
+			]>
+			<lolz>&lol9;</lolz>
+			"""u8.ToArray();
+
+		var numBytesParsed = 0L;
+
+		var options = new XmlParserOptions
+		{
+			BillionLaughsAttackProtectionActivationThreshold = 1 << 16,
+			BillionLaughsAttackProtectionMaximumAmplification = 10 * factorScale
+		};
+
+		using var parser = new XmlParser(options);
+
+		parser.OnText += value =>
+		{
+			numBytesParsed += (long)Encoding.UTF8.GetByteCount(value);
+		};
+
+		var proc = Process.GetCurrentProcess();
+
+		Console.WriteLine("Starting working set: {0:F2}", FormatByteSize(proc.WorkingSet64));
+
+		var (result, error) = parser.TryParse(buf, buf.Length, true);
+
+		proc.Refresh();
+
+		Console.WriteLine("Num bytes (of text nodes) parsed: {0}", FormatByteSize(numBytesParsed));
+
+		Assert.Multiple(() =>
+		{
+			Assert.That(result, Is.False);
+			Assert.That(error, Is.EqualTo(XmlError.AmplificationLimitBreach));
+			Console.WriteLine("[{0}] = {1}", result, error);
+		});
+
+		Console.WriteLine("[1] Post-parsing working set: {0:F2}", FormatByteSize(proc.WorkingSet64));
+
+		proc.Refresh();
+
+		Console.WriteLine("[2] End-parsing working set: {0:F2}", FormatByteSize(proc.WorkingSet64));
+
+		GC.Collect();
+		GC.WaitForPendingFinalizers();
+
+		Console.WriteLine("[3] Post GC working set: {0:F2}", FormatByteSize(proc.WorkingSet64));
+
+		static string FormatByteSize(long size)
+		{
+			string[] formats = ["B", "KB", "MB", "GB", "TB"];
+
+			double mSize = (double)size;
+			int index = 0;
+
+			while (mSize > 1024d)
+			{
+				if (index > formats.Length - 1)
+					break;
+
+				mSize /= 1024d;
+				index++;
+			}
+
+			return string.Format("{0:F2} {1}", mSize, formats[index]);
+		}
 	}
 }
