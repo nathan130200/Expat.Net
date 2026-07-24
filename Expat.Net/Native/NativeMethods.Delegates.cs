@@ -5,32 +5,28 @@ namespace Expat.Native;
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void XmlPrologHandler(nint userData, nint versionPtr, nint encodingPtr, XmlStandalone standalone);
+public delegate void PrologHandlerCallback(nint userData, nint versionPtr, nint encodingPtr, XmlStandalone standalone);
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void XmlStartElementHandler(nint userData, nint namePtr, nint attsPtr);
+public delegate void StartElementHandlerCallback(nint userData, nint namePtr, nint attsPtr);
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void XmlEndElementHandler(nint userData, nint namePtr);
+public delegate void EndElementHandlerCallback(nint userData, nint namePtr);
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void XmlCharacterDataHandler(nint userData, nint buf, int len);
+public delegate void CharacterDataHandlerCallback(nint userData, nint buf, int len);
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void XmlProcessingInstructionHandler(nint userData, nint targetPtr, nint dataPtr);
+public delegate void ProcessingInstructionHandlerCallback(nint userData, nint targetPtr, nint dataPtr);
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void XmlCommentHandler(nint userData, nint dataPtr);
+public delegate void CommentHandlerCallback(nint userData, nint dataPtr);
 
 [EditorBrowsable(EditorBrowsableState.Never)]
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void XmlStartCdataSectionHandler(nint userData);
-
-[EditorBrowsable(EditorBrowsableState.Never)]
-[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-public delegate void XmlEndCdataSectionHandler(nint userData);
+public delegate void CdataSectionHandlerCallback(nint userData);

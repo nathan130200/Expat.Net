@@ -83,12 +83,17 @@ public sealed partial class XmlParser : IDisposable
 		if (_options.ParamEntityParsing is XmlParamEntityParsing pe)
 			NativeMethods.XML_SetParamEntityParsing(_handle, pe);
 
-		NativeMethods.XML_SetXmlDeclHandler(_handle, impl_PrologHandler);
-		NativeMethods.XML_SetProcessingInstructionHandler(_handle, impl_ProcessingInstructionHandler);
-		NativeMethods.XML_SetElementHandler(_handle, impl_StartElementEventHandler, impl_EndElementEventHandler);
-		NativeMethods.XML_SetCdataSectionHandler(_handle, impl_StartCdataSectionHandler, impl_EndCdataSectionHandler);
-		NativeMethods.XML_SetCommentHandler(_handle, impl_CommentHandler);
-		NativeMethods.XML_SetCharacterDataHandler(_handle, impl_CharacterDataHandler);
+		NativeMethods.XML_SetXmlDeclHandler(_handle, s_PrologHandlerImpl);
+
+		NativeMethods.XML_SetProcessingInstructionHandler(_handle, s_ProcessingInstructionHandlerImpl);
+
+		NativeMethods.XML_SetElementHandler(_handle, s_StartElementEventHandlerImpl, s_EndElementEventHandlerImpl);
+
+		NativeMethods.XML_SetCdataSectionHandler(_handle, s_StartCdataSectionHandlerImpl, s_EndCdataSectionHandlerImpl);
+
+		NativeMethods.XML_SetCommentHandler(_handle, s_CommentHandlerImpl);
+
+		NativeMethods.XML_SetCharacterDataHandler(_handle, s_CharacterDataHandlerImpl);
 	}
 
 	public void Dispose()

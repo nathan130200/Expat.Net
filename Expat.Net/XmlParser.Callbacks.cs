@@ -39,7 +39,7 @@ partial class XmlParser
 
 	public event EndElementEventHandler? OnEndElement;
 
-	static readonly XmlPrologHandler impl_PrologHandler = (userData, versionPtr, encodingPtr, standalone) =>
+	static readonly PrologHandlerCallback s_PrologHandlerImpl = (userData, versionPtr, encodingPtr, standalone) =>
 	{
 		var parser = GetParser(userData);
 
@@ -55,7 +55,7 @@ partial class XmlParser
 		handler(version, encoding, standalone);
 	};
 
-	static readonly XmlProcessingInstructionHandler impl_ProcessingInstructionHandler = (userData, targetPtr, dataPtr) =>
+	static readonly ProcessingInstructionHandlerCallback s_ProcessingInstructionHandlerImpl = (userData, targetPtr, dataPtr) =>
 	{
 		var parser = GetParser(userData);
 
@@ -71,7 +71,7 @@ partial class XmlParser
 		handler(target, data);
 	};
 
-	static readonly XmlStartElementHandler impl_StartElementEventHandler = (userData, namePtr, attsPtr) =>
+	static readonly StartElementHandlerCallback s_StartElementEventHandlerImpl = (userData, namePtr, attsPtr) =>
 	{
 		var parser = GetParser(userData);
 
@@ -98,7 +98,7 @@ partial class XmlParser
 		handler(name, atts);
 	};
 
-	static readonly XmlEndElementHandler impl_EndElementEventHandler = (userData, namePtr) =>
+	static readonly EndElementHandlerCallback s_EndElementEventHandlerImpl = (userData, namePtr) =>
 	{
 		var parser = GetParser(userData);
 
@@ -110,7 +110,7 @@ partial class XmlParser
 		handler(Marshal.PtrToStringUTF8(namePtr)!);
 	};
 
-	static readonly XmlStartCdataSectionHandler impl_StartCdataSectionHandler = (userData) =>
+	static readonly CdataSectionHandlerCallback s_StartCdataSectionHandlerImpl = (userData) =>
 	{
 		var parser = GetParser(userData);
 
@@ -122,7 +122,7 @@ partial class XmlParser
 		parser._cdata ??= new();
 	};
 
-	static readonly XmlEndCdataSectionHandler impl_EndCdataSectionHandler = (userData) =>
+	static readonly CdataSectionHandlerCallback s_EndCdataSectionHandlerImpl = (userData) =>
 	{
 		var parser = GetParser(userData);
 
@@ -138,7 +138,7 @@ partial class XmlParser
 		parser._cdata.Clear();
 	};
 
-	static readonly XmlCommentHandler impl_CommentHandler = (userData, dataPtr) =>
+	static readonly CommentHandlerCallback s_CommentHandlerImpl = (userData, dataPtr) =>
 	{
 		var parser = GetParser(userData);
 
@@ -150,7 +150,7 @@ partial class XmlParser
 		handler(Marshal.PtrToStringUTF8(dataPtr)!);
 	};
 
-	static readonly unsafe XmlCharacterDataHandler impl_CharacterDataHandler = (userData, buf, len) =>
+	static readonly unsafe CharacterDataHandlerCallback s_CharacterDataHandlerImpl = (userData, buf, len) =>
 	{
 		var parser = GetParser(userData);
 

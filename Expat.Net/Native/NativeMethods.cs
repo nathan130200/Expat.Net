@@ -11,7 +11,7 @@ public static class NativeMethods
 	const string LibraryName = "expat";
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void XML_SetXmlDeclHandler(nint parser, XmlPrologHandler handler);
+	public static extern void XML_SetXmlDeclHandler(nint parser, PrologHandlerCallback handler);
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern nint XML_ParserCreate(string? encoding);
@@ -21,19 +21,19 @@ public static class NativeMethods
 	public static extern bool XML_ParserReset(nint parser, string? encoding);
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void XML_SetElementHandler(nint parser, XmlStartElementHandler start, XmlEndElementHandler end);
+	public static extern void XML_SetElementHandler(nint parser, StartElementHandlerCallback start, EndElementHandlerCallback end);
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void XML_SetCharacterDataHandler(nint parser, XmlCharacterDataHandler handler);
+	public static extern void XML_SetCharacterDataHandler(nint parser, CharacterDataHandlerCallback handler);
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void XML_SetProcessingInstructionHandler(nint parser, XmlProcessingInstructionHandler handler);
+	public static extern void XML_SetProcessingInstructionHandler(nint parser, ProcessingInstructionHandlerCallback handler);
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void XML_SetCommentHandler(nint parser, XmlCommentHandler handler);
+	public static extern void XML_SetCommentHandler(nint parser, CommentHandlerCallback handler);
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern void XML_SetCdataSectionHandler(nint parser, XmlStartCdataSectionHandler start, XmlEndCdataSectionHandler end);
+	public static extern void XML_SetCdataSectionHandler(nint parser, CdataSectionHandlerCallback start, CdataSectionHandlerCallback end);
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern void XML_SetUserData(nint parser, nint userData);
