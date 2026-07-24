@@ -1,52 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<RootNamespace>Expat</RootNamespace>
-		<Version>2.7.3</Version>
+		<Version>2.8.2-preview-1</Version>
 		<IsTrimmable>false</IsTrimmable>
 		<PublishTrimmed>false</PublishTrimmed>
 		<Authors>nathan130200</Authors>
-		<Description>.NET wrapper for expat library, fast XML parser built in C.</Description>
-		<Copyright>expat developers, nathan130200</Copyright>
-		<PackageProjectUrl>https://github.com/nathan130200/Expat.Net/</PackageProjectUrl>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<Description>Unofficial .NET wrapper for expat library, a fast stream-oriented XML parser library written in C.</Description>
+		<Copyright>nathan130200</Copyright>
+		<PackageReadmeFile></PackageReadmeFile>
 		<RepositoryUrl>https://github.com/nathan130200/Expat.Net/</RepositoryUrl>
-		<PackageTags>xml, xml-parser, expat, xmpp</PackageTags>
-		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-		<NoWarn>$(NoWarn);CS1591</NoWarn>
-		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<PackageTags>xml, xml-parser, expat</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
-
-	<PropertyGroup>
-		<PackageVersionSuffix>beta-2</PackageVersionSuffix>
-		<PackageVersion>$(Version)-$(PackageVersionSuffix)</PackageVersion>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<IsPackable>true</IsPackable>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-	</PropertyGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="..\LICENSE.txt">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-		<None Include="..\README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-	</ItemGroup>
 
 </Project>
