@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Expat.Native;
@@ -94,6 +95,76 @@ public sealed partial class XmlParser : IDisposable
 		NativeMethods.XML_SetCommentHandler(_handle, s_CommentHandlerImpl);
 
 		NativeMethods.XML_SetCharacterDataHandler(_handle, s_CharacterDataHandlerImpl);
+	}
+
+	public void Suspend(bool resumable)
+	{
+		ThrowIfDisposed();
+
+		if (NativeMethods.XML_StopParser(_handle, resumable) == XmlStatus.Success)
+			ThrowException();
+	}
+
+	public void Resume()
+	{
+		ThrowIfDisposed();
+
+		if (NativeMethods.XML_ResumeParser(_handle) != XmlStatus.Success)
+			ThrowException();
+	}
+
+	public void Reset()
+	{
+		ThrowIfDisposed();
+
+		SetupParser(true);
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	void ThrowIfDisposed()
+	{
+#if NET7_0_OR_GREATER
+		ObjectDisposedException.ThrowIf(_disposed, this);
+#else
+		if (_disposed)
+			throw new ObjectDisposedException(nameof(XmlParser));
+#endif
+	}
+
+	public unsafe void Parse(ReadOnlySpan<byte> bytes)
+	{
+		ThrowIfDisposed();
+
+		fixed (byte* p = bytes)
+		{
+			var result = NativeMethods.XML_Parse(_handle, p, bytes.Length, bytes.Length == 0);
+
+			if (result != XmlStatus.Success)
+				ThrowException();
+		}
+	}
+
+	public unsafe ReadOnlySpan<byte> GetInputContext(out int offset)
+	{
+		var ptr = NativeMethods.XML_GetInputContext(_handle, out offset, out int len);
+
+		if (ptr == 0 || len == 0)
+			return [];
+
+		return new ReadOnlySpan<byte>((void*)ptr, len);
+	}
+
+	unsafe void ThrowException()
+	{
+		var error = NativeMethods.XML_GetErrorCode(_handle);
+
+		throw new ExpatException(NativeMethods.XML_GetErrorMessage(error))
+		{
+			LineNumber = NativeMethods.XML_GetCurrentLineNumber(_handle),
+			ColumnNumber = NativeMethods.XML_GetCurrentColumnNumbers(_handle),
+			ByteIndex = NativeMethods.XML_GetCurrentByteIndex(_handle),
+			ByteCount = NativeMethods.XML_GetCurrentByteCount(_handle),
+		};
 	}
 
 	public void Dispose()

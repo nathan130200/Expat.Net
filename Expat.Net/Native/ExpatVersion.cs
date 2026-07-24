@@ -7,5 +7,5 @@ public struct ExpatVersion
 {
 	public int Major;
 	public int Minor;
-	public int Micro;
+	public int Build;
 }

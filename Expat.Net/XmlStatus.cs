@@ -3,6 +3,6 @@
 public enum XmlStatus
 {
 	Error,
-	Ok,
+	Success,
 	Suspended
 }
