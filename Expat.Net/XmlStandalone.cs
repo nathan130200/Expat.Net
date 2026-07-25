@@ -1,8 +1,11 @@
-﻿namespace Expat;
+﻿using System.ComponentModel;
 
+namespace Expat;
+
+[EditorBrowsable(EditorBrowsableState.Never)]
 public enum XmlStandalone
 {
 	NotSet = -1,
-	Yes,
-	No
+	Yes = 1,
+	No = 0,
 }
