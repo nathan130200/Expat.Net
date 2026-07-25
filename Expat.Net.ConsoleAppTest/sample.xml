@@ -83,6 +83,40 @@
 
 	<?target-app teardown?>
 
+	<custom-xml>
+
+		<iq from="masterserver@warface/main_pve_3" to="superuser13@warface/GameClient" xml:lang="en" id="uid00000063" type="result">
+			<query xmlns="urn:cryonline:k01">
+				<gameroom_open>
+					<game_room room_id="4922683981855457399" room_type="1">
+						<core teams_switched="0" room_name="Sala de jogo SuperUser13" private="0" players="1" can_start="0" team_balanced="1" min_ready_players="3" revision="2">
+							<players>
+								<player profile_id="3290687" team_id="1" status="0" observer="0" skill="1.000" nickname="SuperUser13" clanName="" class_id="0" online_id="superuser13@warface/GameClient" group_id="" presence="17" experience="0" rank="1" banner_badge="4294967295" banner_mark="4294967295" banner_stripe="4294967295" region_id="global" />
+							</players>
+							<playersReserved />
+							<team_colors>
+								<team_color id="1" color="4294907157" />
+								<team_color id="2" color="4279655162" />
+							</team_colors>
+						</core>
+						<session id="" status="0" game_progress="0" start_time="18446744011573965616" team1_start_score="0" team2_start_score="0" revision="2" />
+						<custom_params friendly_fire="0" enemy_outlines="1" auto_team_balance="0" join_in_the_process="1" max_players="5" round_limit="0" preround_time="-1" class_restriction="253" inventory_slot="2113929215" locked_spectator_camera="0" high_latency_autokick="1" overtime_mode="0" revision="2" />
+						<mission mission_key="2b3646f8-7f71-4a6a-9e2a-eb235837945d" no_teams="1" name="@na_mission_path01_1" setting="africa/africa_base" mode="pve" mode_name="@PvE_game_mode_desc" mode_icon="pve_icon" description="@mission_desc_africa_path" image="mapImgAfrica_training" difficulty="easy" type="trainingmission" time_of_day="9:06" revision="2">
+							<objectives factor="1">
+								<objective id="0" type="primary" />
+								<objective id="15" type="secondary" />
+							</objectives>
+						</mission>
+						<ingame_chat revision="2" />
+						<room_master master="3290687" revision="2" />
+						<regions region_id="global" revision="2" />
+					</game_room>
+				</gameroom_open>
+			</query>
+		</iq>
+
+	</custom-xml>
+
 </root>
 
 <!-- PI after the root element closes (allowed at document level, like comments) -->
