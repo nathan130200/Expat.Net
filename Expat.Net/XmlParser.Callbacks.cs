@@ -9,11 +9,11 @@ public delegate void ProcessingInstructionEventHandler(string target, string? da
 
 public delegate void StartElementEventHandler(string name, IReadOnlyDictionary<string, string> attributes);
 
-public delegate void EndElementEventHandler(string name);
-
 public delegate void TextEventHandler(string value);
 
 public delegate void CommentEventHandler(string value);
+
+public delegate void EndElementEventHandler(string name);
 
 partial class XmlParser
 {

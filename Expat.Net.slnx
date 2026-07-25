@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
   <Project Path="Expat.Net.ConsoleAppTest/Expat.Net.ConsoleAppTest.csproj" Id="575331aa-068a-44c3-ad39-6d415b6374cf" />
   <Project Path="Expat.Net/Expat.Net.csproj" />
 </Solution>

@@ -8,12 +8,13 @@ Unofficial .NET wrapper for [expat](https://github.com/libexpat/libexpat) librar
 
 * `OnProlog`
 * `OnProcessingInstruction`
-* `OnStartTag`
-* `OnEndTag`
+* `OnStartElement`
 * `OnText`
 * `OnCdata`
 * `OnComment`
+* `OnEndElement`
 
+> `XmlParser` class is not thread-safe concurrent interactions with parser may corrupt unmanaged state and cause memory access violations!
 
 ### Native Library Resolution Priority
 
@@ -25,6 +26,4 @@ Unofficial .NET wrapper for [expat](https://github.com/libexpat/libexpat) librar
 
 ## Notes
 
-- There is an explicit intention to keep this project aligned with the latest official libexpat releases.
-
-- This library implement [native library resolver](https://learn.microsoft.com/en-us/dotnet/standard/native-interop/native-library-loading) to attempt load almost all possible combinations of expat library names (libexpat, expat) and file extensions (`.dll`, `.so`, `.so.1`, `.dylib`).
+- There is an explicit intention to keep this project aligned with the latest official libexpat releases..
