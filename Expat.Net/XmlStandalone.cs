@@ -1,8 +1,5 @@
-﻿using System.ComponentModel;
+﻿namespace Expat;
 
-namespace Expat;
-
-[EditorBrowsable(EditorBrowsableState.Never)]
 public enum XmlStandalone
 {
 	NotSet = -1,

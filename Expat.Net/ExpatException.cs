@@ -1,6 +1,6 @@
 ﻿namespace Expat;
 
-public class ExpatException : Exception
+public sealed class ExpatException : Exception
 {
 	public ExpatException()
 	{
