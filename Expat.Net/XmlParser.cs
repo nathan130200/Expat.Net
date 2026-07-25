@@ -103,7 +103,7 @@ public sealed partial class XmlParser : IDisposable
 	{
 		ThrowIfDisposed();
 
-		if (NativeMethods.XML_StopParser(_handle, resumable) == XmlStatus.Success)
+		if (NativeMethods.XML_StopParser(_handle, resumable) != XmlStatus.Success)
 			ThrowException();
 	}
 

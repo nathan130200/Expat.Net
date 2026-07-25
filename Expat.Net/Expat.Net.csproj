@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<RootNamespace>Expat</RootNamespace>
-		<Version>2.8.2-preview-1</Version>
+		<Version>2.8.2-preview-2</Version>
 		<IsTrimmable>false</IsTrimmable>
 		<PublishTrimmed>false</PublishTrimmed>
 		<Authors>nathan130200</Authors>
