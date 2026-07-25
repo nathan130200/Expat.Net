@@ -16,6 +16,7 @@ public sealed class XmlParserOptions
 		Encoding = XmlEncoding.Utf8;
 		ParamEntityParsing = XmlParamEntityParsing.Never;
 		HashSaltFactory = DefaultHashSaltFactory;
+		ShouldEmitInputContext = false;
 	}
 
 	public XmlParserOptions(XmlParserOptions other)
@@ -27,6 +28,7 @@ public sealed class XmlParserOptions
 		AllocTrackerMaximumAmplification = other.AllocTrackerMaximumAmplification;
 		AllocTrackerActivationThreshold = other.AllocTrackerActivationThreshold;
 		HashSaltFactory = other.HashSaltFactory;
+		ShouldEmitInputContext = other.ShouldEmitInputContext;
 	}
 
 	public XmlEncoding Encoding
@@ -66,6 +68,12 @@ public sealed class XmlParserOptions
 	}
 
 	public HashSaltDelegate? HashSaltFactory
+	{
+		get;
+		init;
+	}
+
+	public bool ShouldEmitInputContext
 	{
 		get;
 		init;

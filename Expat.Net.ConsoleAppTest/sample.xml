@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml-stylesheet type="text/xsl" href="style.xsl"?>
+<?custom-pi some data for a custom processing instruction?>
+<!-- Root element with multiple attributes -->
+<root xmlns:custom="urn:example:custom" version="1" active="true">
+
+	<!-- Processing instruction inside the document, before any element content -->
+	<?target-app do-something?>
+
+	<!-- Simple element with text content -->
+	<simple attr1="value1" attr2="value2">Plain text content</simple>
+
+	<!-- Self-closing tag with attributes -->
+	<selfclosed id="42" name="empty-element" />
+
+	<!-- Self-closing tag without attributes -->
+	<emptytag/>
+
+	<!-- Nested elements -->
+	<parent>
+		<child index="1">First child</child>
+		<child index="2">Second child</child>
+		<child index="3"/>
+	</parent>
+
+	<!-- Comment between elements -->
+	<!-- This is a standalone comment node -->
+
+	<!-- Element containing a comment inside it -->
+	<withcomment>
+		<!-- inner comment -->
+		<inner>text</inner>
+	</withcomment>
+
+	<!-- CDATA section with special characters that would otherwise need escaping -->
+	<cdatasample>
+		<![CDATA[
+        Text with <tags>, & ampersands, "quotes" and 'apostrophes'
+        that should NOT be parsed as XML markup.
+    ]]>
+	</cdatasample>
+
+	<!-- Mixed content: text + child element + text + PI -->
+	<mixed>
+		Before child
+		<child>inline child</child>
+		<?inline-pi data-between-elements?>
+		After child
+	</mixed>
+
+	<!-- Attributes using single quotes, double quotes, and namespaced attribute -->
+	<quotestest attr='single' attr2="double" custom:nsattr="namespaced-value"/>
+
+	<!-- Element with escaped entities -->
+	<entities>&lt;escaped&gt; &amp; &quot;quoted&quot; &apos;apostrophe&apos;</entities>
+
+	<!-- Namespaced element -->
+	<custom:element custom:attr="ns-attr-value">Namespaced element content</custom:element>
+
+	<!-- Whitespace-only text node between elements -->
+	<whitespace>
+		<a/>
+		<b/>
+	</whitespace>
+
+	<!-- Deeply nested structure -->
+	<level1>
+		<level2>
+			<level3 flag="deep">
+				<level4>Deepest text</level4>
+			</level3>
+		</level2>
+	</level1>
+
+	<!-- Numeric and boolean-like attribute values (still just strings in XML) -->
+	<typestest count="10" ratio="3.14" enabled="false" empty=""/>
+
+	<!-- Element with only attributes, no content, using explicit end tag -->
+	<explicitend attr="value"></explicitend>
+
+	<!-- Trailing comment before root closes -->
+	<!-- End of document content -->
+
+	<?target-app teardown?>
+
+</root>
+
+<!-- PI after the root element closes (allowed at document level, like comments) -->
+<?post-root-pi trailing?>

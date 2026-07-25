@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Expat.Net.ConsoleAppTest": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "EXPAT_LIBRARY_PATH": "C:\\vcpkg\\installed\\x64-windows\\bin\\libexpat.dll"
+      }
+    }
+  }
+}

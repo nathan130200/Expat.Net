@@ -143,7 +143,7 @@ public unsafe static class NativeMethods
 	public static extern int XML_GetCurrentLineNumber(nint parser);
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
-	public static extern int XML_GetCurrentColumnNumbers(nint parser);
+	public static extern int XML_GetCurrentColumnNumber(nint parser);
 
 	[DllImport(LibraryName, CallingConvention = CallingConvention.Cdecl)]
 	public static extern int XML_GetCurrentByteIndex(nint parser);

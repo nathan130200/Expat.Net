@@ -95,6 +95,8 @@ public sealed partial class XmlParser : IDisposable
 		NativeMethods.XML_SetCommentHandler(_handle, s_CommentHandlerImpl);
 
 		NativeMethods.XML_SetCharacterDataHandler(_handle, s_CharacterDataHandlerImpl);
+
+		NativeMethods.XML_SetUserData(_handle, (nint)_userData);
 	}
 
 	public void Suspend(bool resumable)
@@ -146,6 +148,12 @@ public sealed partial class XmlParser : IDisposable
 
 	public unsafe ReadOnlySpan<byte> GetInputContext(out int offset)
 	{
+		if (!_options.ShouldEmitInputContext)
+		{
+			offset = 0;
+			return [];
+		}
+
 		var ptr = NativeMethods.XML_GetInputContext(_handle, out offset, out int len);
 
 		if (ptr == 0 || len == 0)
@@ -154,16 +162,25 @@ public sealed partial class XmlParser : IDisposable
 		return new ReadOnlySpan<byte>((void*)ptr, len);
 	}
 
-	unsafe void ThrowException()
+	void ThrowException()
 	{
-		var error = NativeMethods.XML_GetErrorCode(_handle);
+		var code = NativeMethods.XML_GetErrorCode(_handle);
 
-		throw new ExpatException(NativeMethods.XML_GetErrorMessage(error))
+		var context = GetInputContext(out var ofs);
+
+		string? xml = null;
+
+		if (!context.IsEmpty)
+			xml = Encoding.UTF8.GetString(context[ofs..]);
+
+		throw new ExpatException(NativeMethods.XML_GetErrorMessage(code))
 		{
+			Code = code,
 			LineNumber = NativeMethods.XML_GetCurrentLineNumber(_handle),
-			ColumnNumber = NativeMethods.XML_GetCurrentColumnNumbers(_handle),
+			ColumnNumber = NativeMethods.XML_GetCurrentColumnNumber(_handle),
 			ByteIndex = NativeMethods.XML_GetCurrentByteIndex(_handle),
 			ByteCount = NativeMethods.XML_GetCurrentByteCount(_handle),
+			Fragment = xml
 		};
 	}
 
