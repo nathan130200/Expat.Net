@@ -141,8 +141,22 @@ public sealed partial class XmlParser : IDisposable
 		{
 			var result = NativeMethods.XML_Parse(_handle, p, bytes.Length, bytes.Length == 0);
 
-			if (result != XmlStatus.Success)
+			if (result == XmlStatus.Error)
 				ThrowException();
+		}
+	}
+
+	public unsafe bool TryParse(ReadOnlySpan<byte> bytes, out XmlError code)
+	{
+		ThrowIfDisposed();
+
+		fixed (byte* p = bytes)
+		{
+			var result = NativeMethods.XML_Parse(_handle, p, bytes.Length, bytes.Length == 0);
+
+			code = NativeMethods.XML_GetErrorCode(_handle);
+
+			return result == XmlStatus.Success;
 		}
 	}
 
@@ -166,11 +180,8 @@ public sealed partial class XmlParser : IDisposable
 	{
 		var code = NativeMethods.XML_GetErrorCode(_handle);
 
-		if (code == XmlError.None) // ignore when no error 
-		{
-			Trace.WriteLine($"<XmlParser::{memberName}> ThrowException(): Called but XML_GetErrorCode() returned XML_ERROR_NONE (no error).\n{Environment.StackTrace}");
-			return;
-		}
+		// no error, just ignore (eg: temporary suspend parser will return status XML_STATUS_SUSPENDED)
+		if (code == XmlError.None) return;
 
 		var context = GetInputContext(out var ofs);
 
