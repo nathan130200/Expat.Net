@@ -103,7 +103,7 @@ public sealed partial class XmlParser : IDisposable
 	{
 		ThrowIfDisposed();
 
-		if (NativeMethods.XML_StopParser(_handle, resumable) != XmlStatus.Success)
+		if (NativeMethods.XML_StopParser(_handle, resumable) == XmlStatus.Error)
 			ThrowException();
 	}
 
@@ -111,7 +111,7 @@ public sealed partial class XmlParser : IDisposable
 	{
 		ThrowIfDisposed();
 
-		if (NativeMethods.XML_ResumeParser(_handle) != XmlStatus.Success)
+		if (NativeMethods.XML_ResumeParser(_handle) == XmlStatus.Error)
 			ThrowException();
 	}
 
@@ -165,6 +165,12 @@ public sealed partial class XmlParser : IDisposable
 	void ThrowException()
 	{
 		var code = NativeMethods.XML_GetErrorCode(_handle);
+
+		if (code == XmlError.None) // ignore when no error 
+		{
+			Trace.WriteLine($"XmlParser::ThrowException() Called but XML_GetErrorCode() returned XML_ERROR_NONE (no error).\n{Environment.StackTrace}");
+			return;
+		}
 
 		var context = GetInputContext(out var ofs);
 
