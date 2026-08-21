@@ -162,13 +162,13 @@ public sealed partial class XmlParser : IDisposable
 		return new ReadOnlySpan<byte>((void*)ptr, len);
 	}
 
-	void ThrowException()
+	void ThrowException([CallerMemberName] string? memberName = null)
 	{
 		var code = NativeMethods.XML_GetErrorCode(_handle);
 
 		if (code == XmlError.None) // ignore when no error 
 		{
-			Trace.WriteLine($"XmlParser::ThrowException() Called but XML_GetErrorCode() returned XML_ERROR_NONE (no error).\n{Environment.StackTrace}");
+			Trace.WriteLine($"<XmlParser::{memberName}> ThrowException(): Called but XML_GetErrorCode() returned XML_ERROR_NONE (no error).\n{Environment.StackTrace}");
 			return;
 		}
 
