@@ -1,21 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
+		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<Nullable>enable</Nullable>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Nullable>annotations</Nullable>
 		<RootNamespace>Expat</RootNamespace>
-		<Version>2.8.2-preview-4</Version>
-		<IsTrimmable>false</IsTrimmable>
-		<PublishTrimmed>false</PublishTrimmed>
-		<Authors>nathan130200</Authors>
-		<Description>Unofficial .NET wrapper for expat library, a fast stream-oriented XML parser library written in C.</Description>
-		<Copyright>nathan130200</Copyright>
-		<PackageReadmeFile></PackageReadmeFile>
-		<RepositoryUrl>https://github.com/nathan130200/Expat.Net/</RepositoryUrl>
-		<PackageTags>xml, xml-parser, expat</PackageTags>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 </Project>

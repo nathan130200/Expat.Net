@@ -1,8 +1,8 @@
 ﻿namespace Expat;
 
-public enum XmlStatus
+public enum XmlStatus : int
 {
-	Error,
-	Success,
-	Suspended
+    Error = 0,
+    Success = 1,
+    Suspended = 2
 }

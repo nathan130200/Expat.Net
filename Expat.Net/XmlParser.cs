@@ -1,222 +1,231 @@
-﻿using System.Diagnostics;
+﻿using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using Expat.Native;
 
 namespace Expat;
 
+using static NativeMethods;
+
 public sealed partial class XmlParser : IDisposable
 {
-	nint _handle;
-	volatile bool _disposed;
-	readonly GCHandle _userData;
-	readonly XmlParserOptions _options;
-	volatile bool _inCdata;
-	StringBuilder? _cdata;
-	Encoding _encoding;
+    readonly XmlParserOptions _options;
+    volatile bool _disposed, _inCdata;
 
-	static Encoding GetEncoding(XmlEncoding type)
-	{
-		return type switch
-		{
-			XmlEncoding.Ascii => Encoding.ASCII,
-			XmlEncoding.Latin1 => Encoding.Latin1,
-			XmlEncoding.Utf16Le => Encoding.Unicode,
-			XmlEncoding.Utf16Be => Encoding.BigEndianUnicode,
-			XmlEncoding.Utf8 => Encoding.UTF8,
-			_ => throw new InvalidOperationException("Unknown encoding type."),
-		};
-	}
+    ArrayBufferWriter<byte>? _textContent;
+    ArrayBufferWriter<byte>? _cdataSection;
 
-	public XmlParser(XmlParserOptions options)
-	{
-		ArgumentNullException.ThrowIfNull(options);
+    nint _handle;
+    GCHandle _userData;
+    Exception? _lastException;
 
-		_options = options;
+    public XmlParserOptions Options => _options;
 
-		_encoding = GetEncoding(options.Encoding);
+    static readonly Dictionary<XmlEncoding, string?> s_XmlEncodingNameMap = new()
+    {
+        [XmlEncoding.Default] = default,
+        [XmlEncoding.Ascii] = "US-ASCII",
+        [XmlEncoding.Utf8] = "UTF-8",
+        [XmlEncoding.Utf16Le] = "UTF-16LE",
+        [XmlEncoding.Utf16Be] = "UTF-16BE",
+        [XmlEncoding.Iso88591] = "ISO-8859-1"
+    };
 
-		_handle = NativeMethods.XML_ParserCreate(_encoding.WebName);
+    void OnUnhandledException(Exception ex)
+    {
+        _lastException ??= ex;
+        XML_StopParser(_handle, false);
+    }
 
-		if (_handle == 0)
-			throw new OutOfMemoryException();
+    public XmlParser(XmlParserOptions? options = default)
+    {
+        _options = options ?? XmlParserOptions.Default;
 
-		_userData = GCHandle.Alloc(this);
+        var encodingName = s_XmlEncodingNameMap[_options.Encoding];
 
-		SetupParser(false);
-	}
+        if (_options.NamespaceSeparatorChar is byte nsByte)
+            _handle = XML_ParserCreateNS(encodingName, nsByte);
+        else
+            _handle = XML_ParserCreate(encodingName);
 
-	unsafe void SetupParser(bool reset)
-	{
-		if (reset)
-			NativeMethods.XML_ParserReset(_handle, _encoding.WebName);
+        if (_handle == 0)
+            throw new InvalidOperationException("Cannot create expat parser.");
 
-		if (_options.HashSaltFactory != null)
-		{
-			Span<byte> buf = stackalloc byte[16];
+        _userData = GCHandle.Alloc(this);
 
-			try
-			{
-				_options.HashSaltFactory(buf);
+        InitNative();
+    }
 
-				fixed (byte* p = buf)
-					NativeMethods.XML_SetHashSalt16Bytes(_handle, p);
-			}
-			catch (Exception ex)
-			{
-				Trace.WriteLine(new InvalidOperationException("Uncaught exception while generating hash salt.", ex));
-			}
-		}
+    void FlushText()
+    {
+        if (_textContent is not { WrittenCount: > 0 }) return;
 
-		if (_options.BillionLaughsAttackProtectionMaximumAmplification is float lolMaxAmp)
-			NativeMethods.XML_SetBillionLaughsAttackProtectionMaximumAmplification(_handle, lolMaxAmp);
+        try
+        {
+            var span = _textContent.WrittenSpan;
 
-		if (_options.BillionLaughsAttackProtectionActivationThreshold is long lolMaxBytes)
-			NativeMethods.XML_SetBillionLaughsAttackProtectionActivationThreshold(_handle, lolMaxBytes);
+            if (_options.IgnoreWhitespace
+                && span.IndexOfAnyExcept(s_WhitespaceChars) < 0) return;
 
-		if (_options.AllocTrackerMaximumAmplification is float allocMaxAmp)
-			NativeMethods.XML_SetAllocTrackerMaximumAmplification(_handle, allocMaxAmp);
+            OnText?.Invoke(span);
+        }
+        catch (Exception ex)
+        {
+            OnUnhandledException(ex);
+        }
+        finally
+        {
+            _textContent.Clear();
+        }
+    }
 
-		if (_options.AllocTrackerActivationThreshold is long allocMaxBytes)
-			NativeMethods.XML_SetAllocTrackerActivationThreshold(_handle, allocMaxBytes);
+    static readonly SearchValues<byte> s_WhitespaceChars
+        = SearchValues.Create((byte)' ', (byte)'\n', (byte)'\r', (byte)'\t');
 
-		if (_options.ParamEntityParsing is XmlParamEntityParsing pe)
-			NativeMethods.XML_SetParamEntityParsing(_handle, pe);
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    unsafe void InitNative()
+    {
+        XML_SetUserData(_handle, (nint)_userData);
+        XML_SetParamEntityParsing(_handle, 0);
+        XML_SetProcessingInstructionHandler(_handle, &ProcessingInstructionCallback);
+        XML_SetCharacterDataHandler(_handle, &CharacterDataCallback);
+        XML_SetStartDoctypeDeclHandler(_handle, &StartDoctypeCallback);
+        XML_SetCommentHandler(_handle, &CommentCallback);
+        XML_SetElementHandler(_handle, &StartElementCallback, &EndElementCallback);
+        XML_SetCdataSectionHandler(_handle, &CdataSectionStartCallback, &CdataSectionEndCallback);
+        XML_SetNamespaceDeclHandler(_handle, &StartNamespaceCallback, &EndNamespaceCallback);
 
-		NativeMethods.XML_SetXmlDeclHandler(_handle, s_PrologHandlerImpl);
+        if (_options.HashSaltFactory is { } factory)
+        {
+            fixed (byte* p = stackalloc byte[16])
+            {
+                var span = new Span<byte>(p, 16);
 
-		NativeMethods.XML_SetProcessingInstructionHandler(_handle, s_ProcessingInstructionHandlerImpl);
+                factory(span);
 
-		NativeMethods.XML_SetElementHandler(_handle, s_StartElementEventHandlerImpl, s_EndElementEventHandlerImpl);
+                XML_SetHashSalt16Bytes(_handle, p);
+            }
+        }
+    }
 
-		NativeMethods.XML_SetCdataSectionHandler(_handle, s_StartCdataSectionHandlerImpl, s_EndCdataSectionHandlerImpl);
+    void ThrowLastException()
+    {
+        if (_lastException is { } ex)
+            ExceptionDispatchInfo.Throw(ex);
+    }
 
-		NativeMethods.XML_SetCommentHandler(_handle, s_CommentHandlerImpl);
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public unsafe void Parse(ReadOnlySpan<byte> bytes, bool is_final)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-		NativeMethods.XML_SetCharacterDataHandler(_handle, s_CharacterDataHandlerImpl);
+        ThrowLastException();
 
-		NativeMethods.XML_SetUserData(_handle, (nint)_userData);
-	}
+        XmlStatus result;
 
-	public void Suspend(bool resumable)
-	{
-		ThrowIfDisposed();
+        fixed (byte* ptr = bytes)
+            result = XML_Parse(_handle, ptr, bytes.Length, is_final);
 
-		if (NativeMethods.XML_StopParser(_handle, resumable) == XmlStatus.Error)
-			ThrowException();
-	}
+        ThrowLastException();
 
-	public void Resume()
-	{
-		ThrowIfDisposed();
+        if (result != XmlStatus.Success)
+            ThrowIfFailed();
+    }
 
-		if (NativeMethods.XML_ResumeParser(_handle) == XmlStatus.Error)
-			ThrowException();
-	}
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void Reset()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-	public void Reset()
-	{
-		ThrowIfDisposed();
+        if (!XML_ParserReset(_handle, s_XmlEncodingNameMap[_options.Encoding]))
+        {
+            ThrowIfFailed();
+            return;
+        }
 
-		SetupParser(true);
-	}
+        _textContent?.Clear();
+        _textContent = null;
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	void ThrowIfDisposed()
-	{
-#if NET7_0_OR_GREATER
-		ObjectDisposedException.ThrowIf(_disposed, this);
-#else
-		if (_disposed)
-			throw new ObjectDisposedException(nameof(XmlParser));
-#endif
-	}
+        _inCdata = false;
 
-	public unsafe void Parse(ReadOnlySpan<byte> bytes)
-	{
-		ThrowIfDisposed();
+        _cdataSection?.Clear();
+        _cdataSection = null;
 
-		fixed (byte* p = bytes)
-		{
-			var result = NativeMethods.XML_Parse(_handle, p, bytes.Length, bytes.Length == 0);
+        _lastException = null;
 
-			if (result == XmlStatus.Error)
-				ThrowException();
-		}
-	}
+        InitNative();
+    }
 
-	public unsafe bool TryParse(ReadOnlySpan<byte> bytes, out XmlError code)
-	{
-		ThrowIfDisposed();
+    public void Stop() => SuspendCore(false);
 
-		fixed (byte* p = bytes)
-		{
-			var result = NativeMethods.XML_Parse(_handle, p, bytes.Length, bytes.Length == 0);
+    public void Suspend() => SuspendCore(true);
 
-			code = NativeMethods.XML_GetErrorCode(_handle);
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    void SuspendCore(bool resumable)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-			return result == XmlStatus.Success;
-		}
-	}
+        if (XML_StopParser(_handle, resumable) != XmlStatus.Success)
+            ThrowIfFailed();
+    }
 
-	public unsafe ReadOnlySpan<byte> GetInputContext(out int offset)
-	{
-		if (!_options.ShouldEmitInputContext)
-		{
-			offset = 0;
-			return [];
-		}
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void Resume()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-		var ptr = NativeMethods.XML_GetInputContext(_handle, out offset, out int len);
+        if (XML_ResumeParser(_handle) != XmlStatus.Success)
+            ThrowIfFailed();
+    }
 
-		if (ptr == 0 || len == 0)
-			return [];
+    bool TryGetParserException([NotNullWhen(true)] out ExpatException? ee)
+    {
+        ee = default;
 
-		return new ReadOnlySpan<byte>((void*)ptr, len);
-	}
+        var code = XML_GetErrorCode(_handle);
 
-	void ThrowException([CallerMemberName] string? memberName = null)
-	{
-		var code = NativeMethods.XML_GetErrorCode(_handle);
+        if (code == 0) return false;
 
-		// no error, just ignore (eg: temporary suspend parser will return status XML_STATUS_SUSPENDED)
-		if (code == XmlError.None) return;
+        var lineNum = XML_GetCurrentLineNumber(_handle);
 
-		var context = GetInputContext(out var ofs);
+        var linePos = XML_GetCurrentColumnNumber(_handle);
 
-		string? xml = null;
+        ee = ExpatException.FromXmlError(code, lineNum, linePos);
 
-		if (!context.IsEmpty)
-			xml = Encoding.UTF8.GetString(context[ofs..]);
+        return ee != null;
+    }
 
-		throw new ExpatException(NativeMethods.XML_GetErrorMessage(code))
-		{
-			Code = code,
-			LineNumber = NativeMethods.XML_GetCurrentLineNumber(_handle),
-			ColumnNumber = NativeMethods.XML_GetCurrentColumnNumber(_handle),
-			ByteIndex = NativeMethods.XML_GetCurrentByteIndex(_handle),
-			ByteCount = NativeMethods.XML_GetCurrentByteCount(_handle),
-			Fragment = xml
-		};
-	}
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    void ThrowIfFailed()
+    {
+        if (TryGetParserException(out var ex))
+            throw ex;
+    }
 
-	public void Dispose()
-	{
-		if (!_disposed)
-		{
-			_disposed = true;
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void Dispose()
+    {
+        if (!_disposed)
+        {
+            _disposed = true;
 
-			if (_handle != 0)
-			{
-				NativeMethods.XML_ParserFree(_handle);
-				_handle = 0;
-			}
+            XML_StopParser(_handle, false);
 
-			if (_userData.IsAllocated)
-				_userData.Free();
+            _lastException = null;
 
-			_encoding = default!;
-		}
-	}
+            _textContent?.Clear();
+            _textContent = null;
+
+            _cdataSection?.Clear();
+            _cdataSection = null;
+
+            XML_ParserFree(_handle);
+
+            if (_userData.IsAllocated)
+                _userData.Free();
+
+            _handle = 0;
+        }
+    }
 }

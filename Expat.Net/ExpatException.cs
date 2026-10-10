@@ -1,21 +1,22 @@
 ﻿namespace Expat;
 
-public sealed class ExpatException : Exception
+public class ExpatException(string message) : ApplicationException(message)
 {
-	public ExpatException()
-	{
+    public XmlError Code { get; init; }
 
-	}
+    public int LineNumber { get; init; }
 
-	public ExpatException(string? message) : base(message)
-	{
+    public int LinePosition { get; init; }
 
-	}
+    public static ExpatException FromXmlError(XmlError code, int lineNum = default, int linePos = default)
+    {
+        var msg = NativeMethods.XML_ErrorString(code);
 
-	public XmlError Code { get; init; }
-	public int LineNumber { get; init; }
-	public int ColumnNumber { get; init; }
-	public int ByteIndex { get; init; }
-	public int ByteCount { get; init; }
-	public string? Fragment { get; init; }
+        return new ExpatException(msg)
+        {
+            Code = code,
+            LineNumber = lineNum,
+            LinePosition = linePos
+        };
+    }
 }

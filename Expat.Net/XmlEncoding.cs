@@ -2,9 +2,10 @@
 
 public enum XmlEncoding
 {
-	Ascii = 1,
-	Latin1,
-	Utf16Be,
-	Utf16Le,
-	Utf8,
+    Default,
+    Ascii,
+    Utf8,
+    Utf16Le,
+    Utf16Be,
+    Iso88591
 }

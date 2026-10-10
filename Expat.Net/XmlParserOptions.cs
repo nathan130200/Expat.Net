@@ -4,80 +4,43 @@ namespace Expat;
 
 public sealed class XmlParserOptions
 {
-	public static XmlParserOptions Default { get; } = new();
+    public static readonly XmlParserOptions Default = new();
 
-	static void DefaultHashSaltFactory(Span<byte> buf)
-	{
-		RandomNumberGenerator.Fill(buf);
-	}
+    public XmlParserOptions()
+    {
 
-	XmlParserOptions()
-	{
-		Encoding = XmlEncoding.Utf8;
-		ParamEntityParsing = XmlParamEntityParsing.Never;
-		HashSaltFactory = DefaultHashSaltFactory;
-		ShouldEmitInputContext = false;
-	}
+    }
 
-	public XmlParserOptions(XmlParserOptions other)
-	{
-		Encoding = other.Encoding;
-		ParamEntityParsing = other.ParamEntityParsing;
-		BillionLaughsAttackProtectionMaximumAmplification = other.BillionLaughsAttackProtectionMaximumAmplification;
-		BillionLaughsAttackProtectionActivationThreshold = other.BillionLaughsAttackProtectionActivationThreshold;
-		AllocTrackerMaximumAmplification = other.AllocTrackerMaximumAmplification;
-		AllocTrackerActivationThreshold = other.AllocTrackerActivationThreshold;
-		HashSaltFactory = other.HashSaltFactory;
-		ShouldEmitInputContext = other.ShouldEmitInputContext;
-	}
+    public XmlParserOptions(XmlParserOptions other)
+    {
+        Encoding = other.Encoding;
+        NamespaceSeparatorChar = other.NamespaceSeparatorChar;
+    }
 
-	public XmlEncoding Encoding
-	{
-		get;
-		init;
-	}
+    public XmlEncoding Encoding
+    {
+        get;
 
-	public XmlParamEntityParsing? ParamEntityParsing
-	{
-		get;
-		init;
-	}
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentException("Invalid XML encoding.");
 
-	public float? BillionLaughsAttackProtectionMaximumAmplification
-	{
-		get;
-		init;
-	}
+            field = value;
+        }
 
-	public long? BillionLaughsAttackProtectionActivationThreshold
-	{
-		get;
-		init;
-	}
+    } = XmlEncoding.Utf8;
 
-	public float? AllocTrackerMaximumAmplification
-	{
-		get;
-		init;
-	}
+    public byte? NamespaceSeparatorChar { get; init; } = (byte)'|';
 
-	public long? AllocTrackerActivationThreshold
-	{
-		get;
-		init;
-	}
+    public bool IgnoreWhitespace { get; init; } = true;
 
-	public HashSaltDelegate? HashSaltFactory
-	{
-		get;
-		init;
-	}
+    public HashSaltFactoryFunction? HashSaltFactory { get; init; }
 
-	public bool ShouldEmitInputContext
-	{
-		get;
-		init;
-	}
+    public static void DefaultHashSaltFactory(Span<byte> bytes)
+    {
+        RandomNumberGenerator.Fill(bytes);
+    }
+
+    public delegate void HashSaltFactoryFunction(Span<byte> bytes);
 }
-
-public delegate void HashSaltDelegate(Span<byte> buf);
