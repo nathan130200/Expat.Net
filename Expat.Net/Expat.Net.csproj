@@ -6,6 +6,7 @@
 		<Nullable>annotations</Nullable>
 		<RootNamespace>Expat</RootNamespace>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Version>2.9.0-preview-1</Version>
 	</PropertyGroup>
 
 </Project>

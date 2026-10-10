@@ -157,12 +157,8 @@ public sealed partial class XmlParser : IDisposable
         InitNative();
     }
 
-    public void Stop() => SuspendCore(false);
-
-    public void Suspend() => SuspendCore(true);
-
     [MethodImpl(MethodImplOptions.NoInlining)]
-    void SuspendCore(bool resumable)
+    public void Suspend(bool resumable)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -179,9 +175,9 @@ public sealed partial class XmlParser : IDisposable
             ThrowIfFailed();
     }
 
-    bool TryGetParserException([NotNullWhen(true)] out ExpatException? ee)
+    bool TryCreateExpatException([NotNullWhen(true)] out ExpatException? exception)
     {
-        ee = default;
+        exception = default;
 
         var code = XML_GetErrorCode(_handle);
 
@@ -191,15 +187,15 @@ public sealed partial class XmlParser : IDisposable
 
         var linePos = XML_GetCurrentColumnNumber(_handle);
 
-        ee = ExpatException.FromXmlError(code, lineNum, linePos);
+        exception = ExpatException.Create(code, lineNum, linePos);
 
-        return ee != null;
+        return exception != null;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     void ThrowIfFailed()
     {
-        if (TryGetParserException(out var ex))
+        if (TryCreateExpatException(out var ex))
             throw ex;
     }
 

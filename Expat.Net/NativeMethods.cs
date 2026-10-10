@@ -142,7 +142,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8, EntryPoint = "XML_ErrorString")]
     private static partial nint XML_ErrorString_Impl(XmlError code);
 
-    public static string XML_ErrorString(XmlError code) => s_XmlErrorToStringMap[code];
+    public static string? XML_ErrorString(XmlError code) => s_XmlErrorToStringMap.GetValueOrDefault(code);
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
     public static partial int XML_GetCurrentLineNumber(nint parser);
