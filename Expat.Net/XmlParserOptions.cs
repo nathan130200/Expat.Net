@@ -31,7 +31,7 @@ public sealed class XmlParserOptions
 
     } = XmlEncoding.Utf8;
 
-    public byte? NamespaceSeparatorChar { get; init; } = (byte)'|';
+    public byte? NamespaceSeparatorChar { get; init; }
 
     public bool IgnoreWhitespace { get; init; } = true;
 
