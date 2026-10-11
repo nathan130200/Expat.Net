@@ -12,6 +12,10 @@ public static class Program
 {
     static void Main(string[] args)
     {
+#if DEBUG
+        Environment.FailFast("Should not run benchmark in Debug mode!");
+#endif
+
         Trace.Listeners.Add(new ConsoleTraceListener());
 
         var config = ManualConfig.CreateMinimumViable()

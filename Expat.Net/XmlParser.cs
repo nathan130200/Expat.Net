@@ -199,6 +199,65 @@ public sealed partial class XmlParser : IDisposable
             throw ex;
     }
 
+    static Dictionary<XmlPropertyResult, string> s_XmlPropertyResultMessageMap = new()
+    {
+        [XmlPropertyResult.InvalidKey] = "Invalid key.",
+        [XmlPropertyResult.InvalidValue] = "Invalid value.",
+        [XmlPropertyResult.InvalidType] = "Property type mismatch.",
+        [XmlPropertyResult.ParserIsNull] = "Parser is null.",
+        [XmlPropertyResult.ParserIsNotRoot] = "Parser is not a root parser.",
+    };
+
+    static void ThrowIfPropertyError(XmlPropertyResult code)
+    {
+        if (code != XmlPropertyResult.None)
+            throw new InvalidOperationException(s_XmlPropertyResultMessageMap[code]);
+    }
+
+    public bool GetPropertyBool(XmlProperty property)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var status = XML_GetPropertyBool(_handle, property, out var result);
+        ThrowIfPropertyError(status);
+        return result;
+    }
+
+    public double GetPropertyDouble(XmlProperty property)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var status = XML_GetPropertyDouble(_handle, property, out var result);
+        ThrowIfPropertyError(status);
+        return result;
+    }
+
+    public ulong GetPropertyUInt64(XmlProperty property)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var status = XML_GetPropertyUInt64(_handle, property, out var result);
+        ThrowIfPropertyError(status);
+        return result;
+    }
+
+    public void SetProperty(XmlProperty property, bool value)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfPropertyError(XML_SetPropertyBool(_handle, property, value));
+    }
+
+    public void SetProperty(XmlProperty property, double value)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfPropertyError(XML_SetPropertyDouble(_handle, property, value));
+    }
+    public void SetProperty(XmlProperty property, ulong value)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowIfPropertyError(XML_SetPropertyUInt64(_handle, property, value));
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void Dispose()
     {

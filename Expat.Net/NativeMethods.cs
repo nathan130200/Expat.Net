@@ -3,8 +3,6 @@ using System.Runtime.InteropServices;
 
 namespace Expat;
 
-using unsafe XML_CharacterDataHandler = delegate* unmanaged[Cdecl]<nint, byte*, int, void>;
-
 #pragma warning disable
 
 internal static unsafe partial class NativeMethods
@@ -106,7 +104,7 @@ internal static unsafe partial class NativeMethods
     public static partial void XML_SetElementHandler(nint parser, delegate* unmanaged[Cdecl]<nint, nint, nint, void> start, delegate* unmanaged[Cdecl]<nint, nint, void> end);
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
-    public static partial void XML_SetCharacterDataHandler(nint parser, XML_CharacterDataHandler handler);
+    public static partial void XML_SetCharacterDataHandler(nint parser, delegate* unmanaged[Cdecl]<nint, byte*, int, void> handler);
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
     public static partial void XML_SetCdataSectionHandler(nint parser, delegate* unmanaged[Cdecl]<nint, void> start, delegate* unmanaged[Cdecl]<nint, void> end);
@@ -149,4 +147,24 @@ internal static unsafe partial class NativeMethods
 
     [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
     public static partial int XML_GetCurrentColumnNumber(nint parser);
+
+    /* Added in Expat 2.9.0. */
+
+    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial XmlPropertyResult XML_GetPropertyBool(nint parser, XmlProperty property, [MarshalAs(UnmanagedType.I1)] out bool value);
+
+    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial XmlPropertyResult XML_GetPropertyDouble(nint parser, XmlProperty property, out double value);
+
+    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial XmlPropertyResult XML_GetPropertyUInt64(nint parser, XmlProperty property, out ulong value);
+
+    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial XmlPropertyResult XML_SetPropertyBool(nint parser, XmlProperty property, [MarshalAs(UnmanagedType.I1)] bool value);
+
+    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial XmlPropertyResult XML_SetPropertyDouble(nint parser, XmlProperty property, double value);
+
+    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial XmlPropertyResult XML_SetPropertyUInt64(nint parser, XmlProperty property, ulong value);
 }

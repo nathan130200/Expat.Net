@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="Expat.Net.Test/Expat.Net.Test.csproj" />
   <Project Path="Expat.Net/Expat.Net.csproj" />
   <Project Path="Expat.Net.Benchmark/Expat.Net.Benchmark.csproj" Id="8ccab125-684e-4c0c-b3d8-95117b841f77" />
 </Solution>
