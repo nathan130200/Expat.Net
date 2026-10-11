@@ -53,7 +53,7 @@ public class XmlPropertyTests
     }
 
     [Fact]
-    public void TryGetBillionLaughsProperties()
+    public void TryGetDefaultBillionLaughsProperties()
     {
         using var parser = new NativeXmlParser("UTF-8");
 
