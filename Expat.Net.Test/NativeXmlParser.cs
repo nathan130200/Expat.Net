@@ -14,7 +14,7 @@ struct NativeXmlParser : IDisposable
 
         _parser = XML_ParserCreate(encoding);
 
-        _userData = userData is null ? default : GCHandle.Alloc(userData);
+        _userData = GCHandle.Alloc(userData);
 
         XML_SetUserData(_parser, (nint)_userData);
     }
