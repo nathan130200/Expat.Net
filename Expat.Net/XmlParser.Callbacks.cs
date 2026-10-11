@@ -4,36 +4,16 @@ using System.Runtime.InteropServices;
 
 namespace Expat;
 
-public delegate void StartElementEventHandler(ReadOnlySpan<byte> name, XmlAttributesReader attributes);
-
-public delegate void EndElementEventHandler(ReadOnlySpan<byte> name);
-
-public delegate void StartNamespaceDeclarationEventHandler(ReadOnlySpan<byte> prefix, ReadOnlySpan<byte> uri);
-
-public delegate void EndNamespaceDeclarationEventHandler(ReadOnlySpan<byte> prefix);
-
-public delegate void CharacterDataEventHandler(ReadOnlySpan<byte> content);
-
-public delegate void CommentEventHandler(ReadOnlySpan<byte> comment);
-
-public delegate void ProcessingInstructionEventHandler(ReadOnlySpan<byte> target, ReadOnlySpan<byte> data);
-
 partial class XmlParser
 {
+    public event PrologEventHandler? OnProlog;
     public event ProcessingInstructionEventHandler? OnProcessingInstruction;
-
     public event StartElementEventHandler? OnStartElement;
-
     public event EndElementEventHandler? OnEndElement;
-
     public event StartNamespaceDeclarationEventHandler? OnStartNamespaceDeclaration;
-
     public event EndNamespaceDeclarationEventHandler? OnEndNamespaceDeclaration;
-
     public event CharacterDataEventHandler? OnText;
-
     public event CharacterDataEventHandler? OnCdata;
-
     public event CommentEventHandler? OnComment;
 
     static bool GetParserContext(nint userData, [NotNullWhen(true)] out XmlParser? parser)
@@ -46,6 +26,27 @@ partial class XmlParser
             parser = p;
 
         return parser != null;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    static unsafe void PrologCallback(nint userData, nint version, nint encoding, int standalone)
+    {
+        if (!GetParserContext(userData, out var parser)) return;
+
+        if (parser.OnProlog is not { } handler) return;
+
+        var version_ = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)version);
+
+        var encoding_ = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)encoding);
+
+        bool? standalone_ = standalone switch
+        {
+            1 => true,
+            0 => false,
+            _ => null
+        };
+
+        handler(version_, encoding_, standalone_);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
