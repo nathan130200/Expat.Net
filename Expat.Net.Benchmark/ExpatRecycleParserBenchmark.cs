@@ -3,7 +3,7 @@ using BenchmarkDotNet.Attributes;
 
 namespace Expat.Benchmark;
 
-public class Expat_RecycleParser_Benchmark
+public class ExpatRecycleParserBenchmark
 {
     byte[] _xmlBytes;
     XmlParser _parser;
@@ -15,7 +15,7 @@ public class Expat_RecycleParser_Benchmark
     public void OnGlobalSetup()
     {
         _parser = new();
-        Expat_InlineParser_Benchmark.SetupParser(_parser, StringAllocation);
+        ExpatInlineParserBenchmark.SetupParser(_parser, StringAllocation);
         _xmlBytes = File.ReadAllBytes("sample.xml");
     }
 
@@ -40,7 +40,7 @@ public class Expat_RecycleParser_Benchmark
     public void OnGlobalSetup_Parsing_Buffered()
     {
         _parser = new();
-        Expat_InlineParser_Benchmark.SetupParser(_parser, StringAllocation);
+        ExpatInlineParserBenchmark.SetupParser(_parser, StringAllocation);
         _xmlBytes = File.ReadAllBytes("sample.xml");
         _contextBytes = ArrayPool<byte>.Shared.Rent(1024 * 4);
     }

@@ -3,7 +3,7 @@ using BenchmarkDotNet.Attributes;
 
 namespace Expat.Benchmark;
 
-public class Expat_SimpleParser_Benchmark
+public class ExpatSimpleParserBenchmark
 {
     byte[] _xmlBytes, _inputBytes;
 
