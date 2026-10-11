@@ -7,21 +7,19 @@
 		<RootNamespace>Expat</RootNamespace>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Version>2.9.0-preview-1</Version>
-		<Company>$(Authors)</Company>
 		<Authors>FRNathan13</Authors>
 		<Description>An unofficial, lightweight .NET wrapper for libexpat, a fast, stream-oriented XML parser written in C.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/nathan130200/Expat.Net</RepositoryUrl>
 		<PackageTags>xml, parser, xml-parser, expat-xml-parser, streaming-parser, library, xml-parser-library, xml-parsing</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Include="..\README.md">
-	    <Pack>True</Pack>
-	    <PackagePath>\</PackagePath>
-	  </None>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>
