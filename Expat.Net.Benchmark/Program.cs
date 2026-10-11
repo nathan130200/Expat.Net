@@ -18,6 +18,12 @@ public static class Program
 
         Trace.Listeners.Add(new ConsoleTraceListener());
 
+        {
+            var path = string.Concat(Environment.GetEnvironmentVariable("PATH"), Path.PathSeparator, Directory.GetCurrentDirectory());
+
+            Environment.SetEnvironmentVariable("PATH", path);
+        }
+
         var config = ManualConfig.CreateMinimumViable()
 
             .AddDiagnoser(new MemoryDiagnoser(new MemoryDiagnoserConfig()))
